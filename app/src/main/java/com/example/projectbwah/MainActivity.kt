@@ -11,12 +11,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.projectbwah.ui.theme.ProjectBWAHTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val spashScreen = installSplashScreen()
+        spashScreen.setKeepOnScreenCondition { true }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(2000L)
+            spashScreen.setKeepOnScreenCondition { false }
+        }
         setContent {
             ProjectBWAHTheme {
                 Scaffold( modifier = Modifier.fillMaxSize() ) { innerPadding ->
