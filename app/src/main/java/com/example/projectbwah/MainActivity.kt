@@ -7,18 +7,24 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -46,6 +52,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.platform.LocalLayoutDirection
 
 class MainActivity : ComponentActivity() {
 
@@ -75,7 +86,7 @@ class MainActivity : ComponentActivity() {
         splashScreen.setKeepOnScreenCondition { true }
 
         CoroutineScope(Dispatchers.Main).launch {
-            delay(2000L)
+            delay(1000L)
             splashScreen.setKeepOnScreenCondition { false }
         }
         setContent {
@@ -107,6 +118,7 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
+
     @Composable
     private fun MainScreen(viewModel: MainViewModel = viewModel()) {
         val navigationBarItems = remember { NavigationBarItems.entries.toTypedArray() }
@@ -136,7 +148,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
         ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
+            Box(modifier = Modifier
+                .padding(
+                    start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    bottom = innerPadding.calculateBottomPadding() - 15.dp
+                )
+                .fillMaxSize()) {
                 when (selectedIndex) {
                     0 -> HomeScreen(pets)
                     1 -> SearchScreen()
@@ -147,16 +166,65 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
     @Composable
     fun HomeScreen(pets: List<Pet>) {
-        Column {
-            Text("Home Screen")
-
-            LazyColumn {
-                items(pets) { pet ->
-                    Text(pet.name ?: "Unknown Pet")
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 150.dp),
+            modifier = Modifier.fillMaxSize() // Ensure the grid fills the entire screen
+        ) {
+            items(pets) { pet ->
+                Card(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .padding(8.dp)
+                        .clickable { /* Add interaction here */ },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Add",
+                                modifier = Modifier.size(75.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        Text(
+                            text = pet.name,
+                            modifier = Modifier.padding(8.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            }
+            item {
+                Card(
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(165.dp)
+                        .padding(8.dp)
+                        .padding(bottom = 15.dp)
+                        .clickable { /* Add interaction here */ },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
             }
         }
@@ -172,4 +240,5 @@ class MainActivity : ComponentActivity() {
         Text("Settings Screen")
     }
 }
+
 
