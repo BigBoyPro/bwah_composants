@@ -1,17 +1,31 @@
 package com.example.projectbwah.data
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.TypeConverter
+import java.time.LocalTime
 import java.util.Date
 
 class Converters {
     @TypeConverter
-    fun fromSpecies(value: Species): String {
+    fun fromScheduleType(value: ScheduleType): String {
         return value.name
     }
 
     @TypeConverter
-    fun toSpecies(value: String): Species {
-        return Species.valueOf(value)
+    fun toScheduleType(value: String): ScheduleType {
+        return ScheduleType.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromLocalTime(value: LocalTime?): String? {
+        return value?.toString()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @TypeConverter
+    fun toLocalTime(value: String?): LocalTime? {
+        return value?.let { LocalTime.parse(it) }
     }
 
     @TypeConverter

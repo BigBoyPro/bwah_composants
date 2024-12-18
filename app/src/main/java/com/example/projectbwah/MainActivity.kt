@@ -1,5 +1,6 @@
 package com.example.projectbwah
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,13 +9,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -22,7 +20,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,7 +33,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectbwah.data.Pet
+
+import com.example.projectbwah.screens.HomeScreen
+import com.example.projectbwah.screens.SearchScreen
+import com.example.projectbwah.screens.SettingsScreen
 import com.example.projectbwah.ui.theme.ProjectBWAHTheme
 import com.example.projectbwah.viewmodel.MainViewModel
 import com.exyte.animatednavbar.AnimatedNavigationBar
@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
         Settings(Icons.Default.Settings)
     }
 
+    @SuppressLint("SuspiciousModifierThen")
     private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = this.then(
         composed {
             clickable(
@@ -147,29 +148,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
-    @Composable
-    fun HomeScreen(pets: List<Pet>) {
-        Column {
-            Text("Home Screen")
-
-            LazyColumn {
-                items(pets) { pet ->
-                    Text(pet.name ?: "Unknown Pet")
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun SearchScreen() {
-        Text("Search Screen")
-    }
-
-    @Composable
-    fun SettingsScreen() {
-        Text("Settings Screen")
-    }
 }
+
+
 
