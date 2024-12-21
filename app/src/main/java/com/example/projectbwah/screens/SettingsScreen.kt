@@ -105,6 +105,8 @@ fun SettingsScreen(
 //                            Toast.LENGTH_SHORT).show()
                         val iii = Intent(context, SpeciesActivityActivity::class.java)
                         iii.putExtra("speciesId", selectedSpecies.id)
+                        iii.putExtra("speciesName", selectedSpecies.name)
+
                         context.startActivity(iii)
                     }
                 }

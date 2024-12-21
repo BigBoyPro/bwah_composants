@@ -49,7 +49,7 @@ data class DefaultActivity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val speciesId: Int,
-    val scheduleType: ScheduleType, // e.g., "daily", "weekly", "once"
+    val scheduleType: ScheduleType?, // e.g., "daily", "weekly", "once"
     val scheduleTime: LocalTime?, // Time of day (e.g., "8:00 AM")
     val scheduleDayOfWeek: Int?, // Day of week (1-7, for weekly)
     val scheduleDate: Date?, // Specific date (for once)

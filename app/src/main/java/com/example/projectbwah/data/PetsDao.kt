@@ -71,7 +71,7 @@ interface PetsDao {
     @Query("SELECT * FROM default_activities WHERE id = :defaultActivityId")
     fun getDefaultActivityById(defaultActivityId: Int): Flow<DefaultActivity>
 
-    @Query("SELECT * FROM default_activities WHERE speciesId = :speciesId")
+    @Query("SELECT * FROM default_activities WHERE speciesId = :speciesId OR isDefault = 1")
     fun getDefaultActivitiesBySpecies(speciesId: Int): Flow<List<DefaultActivity>>
 
 
