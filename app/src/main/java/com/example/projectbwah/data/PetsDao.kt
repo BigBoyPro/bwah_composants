@@ -22,13 +22,13 @@ interface PetsDao {
     @Delete
     suspend fun deletePet(pet: Pet)
 
-    @Query("SELECT * FROM Pet")
+    @Query("SELECT * FROM pets")
     fun getAllPets(): Flow<List<Pet>>
 
-    @Query("SELECT * FROM Pet WHERE idPet = :petId")
+    @Query("SELECT * FROM pets WHERE idPet = :petId")
     fun getPetById(petId: Int): Flow<Pet>
 
-    @Query("DELETE FROM Pet")
+    @Query("DELETE FROM pets")
     suspend fun deleteAllPets()
 
 

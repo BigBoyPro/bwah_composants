@@ -3,23 +3,16 @@ package com.example.projectbwah.data
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.Date
+import java.time.LocalDate
 import java.time.LocalTime
-//enum class Species {
-//    CAT, DOG, HAMSTER, HORSE, RABBIT, FISH, BIRD, SNAKE, LIZARD, TURTLE, OTHER
-//}
 
 enum class ScheduleType {
-    DAILY,
-    WEEKLY,
-    ONCE
+    DAILY, WEEKLY, ONCE
 }
 
-
-@Entity
+@Entity(tableName = "pets")
 data class Pet(
-    @PrimaryKey(autoGenerate = true)
-    val idPet: Int = 0,
+    @PrimaryKey(autoGenerate = true) val idPet: Int = 0,
     val name: String,
     val speciesId: Int,
     val age: Int? = null,
@@ -27,8 +20,8 @@ data class Pet(
     val description: String? = null,
     val weight: Double? = null,
     val height: Double? = null,
-    val birthDate: Date? = null,
-    val dateAdopted: Date? = null,
+    val birthDate: LocalDate? = null,
+    val dateAdopted: LocalDate? = null,
     val color: String? = null,
     val isMale: Boolean? = null,
     val isSterilized: Boolean? = null,
@@ -36,23 +29,21 @@ data class Pet(
     val image: String? = null,
 )
 
-
 @Entity(tableName = "species")
 data class Species(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     @ColumnInfo(index = true) val name: String
 )
 
-
 @Entity(tableName = "default_activities")
 data class DefaultActivity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val speciesId: Int,
-    val scheduleType: ScheduleType?, // e.g., "daily", "weekly", "once"
-    val scheduleTime: LocalTime?, // Time of day (e.g., "8:00 AM")
-    val scheduleDayOfWeek: Int?, // Day of week (1-7, for weekly)
-    val scheduleDate: Date?, // Specific date (for once)
+    val scheduleType: ScheduleType?,
+    val scheduleTime: LocalTime?,
+    val scheduleDayOfWeek: Int?,
+    val scheduleDate: LocalDate?,
     val isDefault: Boolean
 )
 
@@ -61,8 +52,8 @@ data class PetActivity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val petId: Int,
     val activityName: String,
-    val scheduleType: ScheduleType, // e.g., "daily", "weekly", "once"
-    val scheduleTime: LocalTime?, // Time of day (e.g., "8:00 AM")
-    val scheduleDayOfWeek: Int?, // Day of week (1-7, for weekly)
-    val scheduleDate: Date? // Specific date (for once)
+    val scheduleType: ScheduleType,
+    val scheduleTime: LocalTime?,
+    val scheduleDayOfWeek: Int?,
+    val scheduleDate: LocalDate?
 )
