@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.PetsDB
 import com.example.projectbwah.data.ScheduleType
+import com.google.android.material.slider.BaseOnChangeListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,7 @@ class SpeciesActivityViewModel(application: Application) : AndroidViewModel(appl
     var scheduleTime = mutableStateOf<LocalTime?>(null)
     var scheduleDayOfWeek = mutableStateOf<Int?>(null)
     var scheduleDate = mutableStateOf<LocalDate?>(null)
+    var isDefault = mutableStateOf(false)
 
 
     var selectedScheduleType =  mutableStateOf<ScheduleType?>(null)
@@ -43,6 +45,10 @@ class SpeciesActivityViewModel(application: Application) : AndroidViewModel(appl
 
     fun onActivityNameChange(name: String) {
         activityName.value = name
+    }
+
+    fun onIsDefaultChange(bool: Boolean) {
+        isDefault.value = bool
     }
 
     fun onScheduleTimeChange(time: LocalTime?) {

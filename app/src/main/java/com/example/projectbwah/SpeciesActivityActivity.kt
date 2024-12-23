@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -67,8 +66,6 @@ import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.ScheduleType
 import com.example.projectbwah.ui.theme.ProjectBWAHTheme
 import com.example.projectbwah.viewmodel.SpeciesActivityViewModel
-import com.google.android.libraries.places.api.model.LocalDate
-import com.google.android.libraries.play.games.inputmapping.Input
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalTime
@@ -275,7 +272,7 @@ fun AddActivityBottomSheet(
     var scheduleTime by viewModel.scheduleTime
     var scheduleDayOfWeek by viewModel.scheduleDayOfWeek
     var scheduleDate by viewModel.scheduleDate
-    val context = LocalContext.current
+    var isDefault by   viewModel.isDefault
 
     ModalBottomSheet(
         onDismissRequest = onDismiss
@@ -286,11 +283,21 @@ fun AddActivityBottomSheet(
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OutlinedTextField(
-                value = activityName,
-                onValueChange = { viewModel.onActivityNameChange(it) },
-                label = { Text("Activity Name") }
-            )
+            Row {
+                OutlinedTextField(
+                    value = activityName,
+                    onValueChange = { viewModel.onActivityNameChange(it) },
+                    label = { Text("Activity Name") }
+                )
+
+                Row {
+                    Text("Is Default")
+                    Checkbox(
+                        checked = isDefault,
+                        onCheckedChange = { viewModel.onIsDefaultChange(it)},
+                    )
+                }
+            }
 
             // Schedule Type Selection
             var expanded by remember { mutableStateOf(false) }
@@ -432,7 +439,7 @@ fun AddActivityBottomSheet(
                         scheduleTime = scheduleTime,
                         scheduleDayOfWeek = scheduleDayOfWeek,
                         scheduleDate = scheduleDate ,
-                        isDefault = false
+                        isDefault = isDefault
                     )
                     onAddActivity(newActivity)
                     onDismiss() // Close the bottom sheet after adding
@@ -460,6 +467,7 @@ fun EditActivityDialog(
     var scheduleTime by remember { mutableStateOf(activity.scheduleTime) }
     var scheduleDayOfWeek by remember { mutableStateOf(activity.scheduleDayOfWeek) }
     var scheduleDate by remember { mutableStateOf(activity.scheduleDate) }
+    var isDefault by remember { mutableStateOf(activity.isDefault) }
 
     val timePickerState = rememberTimePickerState(initialHour = scheduleTime?.hour ?: 0, initialMinute = scheduleTime?.minute ?: 0)
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = scheduleDate?.let { it.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() })
@@ -469,12 +477,21 @@ fun EditActivityDialog(
         title = { Text("Edit Activity") },
         text = {
             Column {
-                // Edit Activity Name
-                OutlinedTextField(
-                    value = editedName,
-                    onValueChange = { editedName = it },
-                    label = { Text("Activity Name") }
-                )
+                Row {
+                    // Edit Activity Name
+                    OutlinedTextField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = { Text("Activity Name") }
+                    )
+
+                    Text("Is Default")
+                    Checkbox(
+                        checked = isDefault,
+                        onCheckedChange = { isDefault = it },
+                    )
+                }
+
 
                 // Schedule Type Selection
                 var expanded by remember { mutableStateOf(false) }
@@ -601,7 +618,8 @@ fun EditActivityDialog(
                     scheduleType = scheduleType,
                     scheduleTime = scheduleTime,
                     scheduleDayOfWeek = scheduleDayOfWeek,
-                    scheduleDate = scheduleDate
+                    scheduleDate = scheduleDate,
+                    isDefault = isDefault
                 )
 
                 onSave(updatedActivity)
