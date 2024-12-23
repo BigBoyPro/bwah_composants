@@ -2,6 +2,7 @@ package com.example.projectbwah.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -15,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlin.text.clear
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -25,6 +27,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val allSpeciess: Flow<List<Species>> = dao.getAllSpecies()
 
     var showBottomSheet = mutableStateOf(false)
+
+    val selectedPets =  mutableStateListOf<Pet>()
+    var showDeleteConfirmationDialog =mutableStateOf(false)
 
 
 
@@ -68,4 +73,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return dao.getDefaultActivitiesBySpecies(speciesId)
             .flowOn(Dispatchers.IO) // Ensure database operations are on IO dispatcher
     }
+
+
+    fun deleteSelectedPets() {
+        viewModelScope.launch {
+            selectedPets.forEach { pet ->
+                dao.deletePet(pet)
+            }
+            selectedPets.clear() // Clear the selected pets list in the ViewModel
+        }
+    }
+
 }

@@ -78,5 +78,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.xanimated.navigation.bar)
+    implementation("io.coil-kt:coil-compose:2.4.0") // Replace with the latest version if needed
+
     ksp(libs.androidx.room.compiler)
 }

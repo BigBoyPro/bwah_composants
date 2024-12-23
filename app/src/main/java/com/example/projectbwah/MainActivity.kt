@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.platform.LocalLayoutDirection
+import com.example.projectbwah.screens.HomeScreen
 import com.example.projectbwah.screens.SearchScreen
 import com.example.projectbwah.screens.SettingsScreen
 
@@ -168,69 +169,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun HomeScreen(pets: List<Pet>) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 150.dp),
-            modifier = Modifier.fillMaxSize() // Ensure the grid fills the entire screen
-        ) {
-            items(pets) { pet ->
-                Card(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .padding(8.dp)
-                        .clickable { /* Add interaction here */ },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Add",
-                                modifier = Modifier.size(75.dp),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                        Text(
-                            text = pet.name,
-                            modifier = Modifier.padding(8.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            }
-            item {
-                Card(
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(165.dp)
-                        .padding(8.dp)
-                        .padding(bottom = 15.dp)
-                        .clickable { /* Add interaction here */ },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-            }
-        }
-    }
+
 
 }
 
