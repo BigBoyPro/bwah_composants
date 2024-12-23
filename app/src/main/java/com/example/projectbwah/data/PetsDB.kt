@@ -11,12 +11,12 @@ import androidx.room.TypeConverters
 abstract class PetsDB : RoomDatabase() {
     abstract fun PetsDao(): PetsDao
 
-    companion object { //un seul par classe
+    companion object {
         @Volatile
         private var instance: PetsDB? = null
         fun getDB(c: Context): PetsDB {
             if (instance != null) return instance!!
-            val db = Room.databaseBuilder(c.applicationContext, PetsDB::class.java, "books")
+            val db = Room.databaseBuilder(c.applicationContext, PetsDB::class.java, "pets")
                 .fallbackToDestructiveMigration().build()
             instance = db
             return instance!!
