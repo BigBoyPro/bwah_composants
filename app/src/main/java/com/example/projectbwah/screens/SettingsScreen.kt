@@ -45,6 +45,8 @@ import com.example.projectbwah.SpeciesActivityActivity
 import com.example.projectbwah.data.Species
 import com.example.projectbwah.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
+import com.example.projectbwah.utils.ThemeHelper
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +58,10 @@ fun SettingsScreen(
     var showBottomSheet by viewModel.showBottomSheet
 
     val speciesList by viewModel.allSpeciess.collectAsState(emptyList())
+
+    // theme helper
+    val isDarkTheme by viewModel.isDarkTheme.collectAsState() // Collect theme preference from ViewModel
+
 
     Scaffold(
         topBar = {
@@ -84,15 +90,8 @@ fun SettingsScreen(
             ) {
                 Text("Dark Mode")
                 Switch(
-                    checked = isSystemInDarkTheme(),
-                    onCheckedChange = { isChecked ->
-                        val mode = if (isChecked) {
-                            AppCompatDelegate.MODE_NIGHT_YES
-                        } else {
-                            AppCompatDelegate.MODE_NIGHT_NO
-                        }
-                        AppCompatDelegate.setDefaultNightMode(mode)
-                    }
+                    checked = isDarkTheme,
+                    onCheckedChange = { viewModel.toggleTheme() } // Call ViewModel function to toggle theme
                 )
             }
 

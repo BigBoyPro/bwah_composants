@@ -4,7 +4,9 @@ package com.example.projectbwah.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,7 +14,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.Pet
 import com.example.projectbwah.data.PetsDB
+import com.example.projectbwah.utils.ThemeHelper
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,7 +35,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     var description = mutableStateOf("")
     var weight = mutableStateOf("")
     var height = mutableStateOf("")
+    @RequiresApi(Build.VERSION_CODES.O)
     var birthDate = mutableStateOf(LocalDate.now())
+    @RequiresApi(Build.VERSION_CODES.O)
     var dateAdopted = mutableStateOf(LocalDate.now())
     var color = mutableStateOf("")
     var isMale = mutableStateOf(true)
@@ -110,6 +117,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun updatePet(petId: Int) {
         // Validate data (similar to AddPetViewModel)
         // ...
@@ -167,6 +175,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+
+
 
 
 }
