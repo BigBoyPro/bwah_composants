@@ -1,10 +1,7 @@
 package com.example.projectbwah.screens
 
 import android.content.Intent
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -40,12 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import com.example.projectbwah.SpeciesActivityActivity
 import com.example.projectbwah.data.Species
 import com.example.projectbwah.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
-import com.example.projectbwah.utils.ThemeHelper
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,7 +50,7 @@ fun SettingsScreen(
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by viewModel.showBottomSheet
 
-    val speciesList by viewModel.allSpeciess.collectAsState(emptyList())
+    val speciesList by viewModel.allSpecies.collectAsState(emptyList())
 
     // theme helper
     val isDarkTheme by viewModel.isDarkTheme.collectAsState() // Collect theme preference from ViewModel

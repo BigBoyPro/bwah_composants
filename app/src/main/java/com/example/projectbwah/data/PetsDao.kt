@@ -17,7 +17,7 @@ interface PetsDao {
     suspend fun insertPet(pet: Pet): Long
 
     @Update
-    suspend fun updatePet(pet: Pet)
+    suspend fun updatePet(pet: Pet): Int
 
     @Delete
     suspend fun deletePet(pet: Pet)

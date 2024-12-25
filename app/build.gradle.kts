@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.projectbwah"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -78,7 +78,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.xanimated.navigation.bar)
-    implementation("io.coil-kt:coil-compose:2.4.0") // Replace with the latest version if needed
+    implementation(libs.coil.compose)
 
     ksp(libs.androidx.room.compiler)
 }

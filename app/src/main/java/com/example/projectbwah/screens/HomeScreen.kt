@@ -1,14 +1,11 @@
 package com.example.projectbwah.screens
 
-import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,11 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,21 +38,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.projectbwah.AddPetActivity
-import com.example.projectbwah.EditPetActivity
 import com.example.projectbwah.data.Pet
 import com.example.projectbwah.viewmodel.MainViewModel
-import kotlin.collections.remove
-import kotlin.text.clear
-import androidx.compose.runtime.getValue
+import com.example.projectbwah.PetDialog
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
-    val context = LocalContext.current
 
-    val selectedPets by remember { mutableStateOf(viewModel.selectedPets) } // Access the state list
+
+    val selectedPets = viewModel.selectedPets
     var showDeleteConfirmationDialog by viewModel.showDeleteConfirmationDialog
+    var showPetDialog by rememberSaveable { mutableStateOf(false) }
+    var selectedPetId by rememberSaveable { mutableStateOf<Int?>(null) }
 
 
     LazyVerticalGrid(
@@ -71,13 +64,9 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                     .size(150.dp)
                     .padding(8.dp)
                     .combinedClickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null, // Remove ripple effect
                         onClick = {
-                            // Handle single click (e.g., navigate to edit screen)
-                            val editPetIntent = Intent(context, AddPetActivity::class.java)
-                            editPetIntent.putExtra("petId", pet.idPet)
-                            context.startActivity(editPetIntent)
+                            selectedPetId = pet.idPet
+                            showPetDialog = true
                         },
                         onLongClick = {
                             if (isSelected) {
@@ -108,8 +97,8 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                     .padding(8.dp)
                     .padding(bottom = 15.dp)
                     .clickable {
-                        val addPetIntent = Intent(context, AddPetActivity::class.java)
-                        context.startActivity(addPetIntent)
+                        selectedPetId = null
+                        showPetDialog = true
                     },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
@@ -128,6 +117,10 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
         }
 
     }
+    if (showPetDialog) {
+        PetDialog(petId = selectedPetId, onDismissRequest = { showPetDialog = false })
+    }
+
     // Delete button
     if (selectedPets.isNotEmpty()) {
         Button(modifier = Modifier.padding(16.dp), onClick = { showDeleteConfirmationDialog = true }, colors = ButtonColors(containerColor = Color.Red, contentColor = Color.White, disabledContainerColor = Color.Red, disabledContentColor = Color.White)) {
@@ -159,7 +152,6 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
     }
 
 }
-
 
 //@Composable
 //fun HomeScreen(pets: List<Pet>) {

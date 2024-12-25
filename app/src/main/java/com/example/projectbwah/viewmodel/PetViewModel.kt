@@ -1,60 +1,47 @@
 package com.example.projectbwah.viewmodel
 
 
-
 import android.app.Application
+import android.content.Context
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.Pet
 import com.example.projectbwah.data.PetsDB
-import com.example.projectbwah.utils.ThemeHelper
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.projectbwah.utils.saveImageToInternalStorage
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import kotlin.text.toDoubleOrNull
-import kotlin.text.toIntOrNull
 
 class PetViewModel(application: Application) : AndroidViewModel(application) {
     private val dao by lazy { PetsDB.getDB(application).PetsDao() }
 
+    private var petId: Int? = null
+    var pet = mutableStateOf<Pet?>(null)
+    var finish = mutableStateOf(false)
     var name = mutableStateOf("")
-    var speciesId = mutableStateOf(1)
-    var age = mutableStateOf("")
+    var nameError = mutableStateOf("")
     var breed = mutableStateOf("")
+    var breedError = mutableStateOf("")
     var description = mutableStateOf("")
+    var descriptionError = mutableStateOf("")
     var weight = mutableStateOf("")
+    var weightError = mutableStateOf("")
     var height = mutableStateOf("")
-    @RequiresApi(Build.VERSION_CODES.O)
-    var birthDate = mutableStateOf(LocalDate.now())
-    @RequiresApi(Build.VERSION_CODES.O)
-    var dateAdopted = mutableStateOf(LocalDate.now())
+    var heightError = mutableStateOf("")
+    var birthDate = mutableStateOf<LocalDate?>(null)
+    var birthDateError = mutableStateOf("")
+    var adoptedDate = mutableStateOf<LocalDate?>(null)
+    var adoptedDateError = mutableStateOf("")
     var color = mutableStateOf("")
+    var colorError = mutableStateOf("")
     var isMale = mutableStateOf(true)
     var isSterilized = mutableStateOf(false)
-    var isVaccinated = mutableStateOf(false)
-//    var image = mutableStateOf("")
     var imageUri = mutableStateOf<Uri?>(null)
-
-
-
-
-    var showDatePicker = mutableStateOf(false)
-    var showAdoptedDatePicker = mutableStateOf(false)
-
-    var showErrors = mutableStateOf(false)
-
-
 
 
     var selectedSpeciesName = mutableStateOf("")
@@ -64,102 +51,102 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = emptyList()
     )
 
-
-
-    fun addPet() {
-
-        val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id ?: -1
-        Log.d("AddPetViewModel", "name: ${name.value} , speciesId: $speciesId, age: ${age.value}, breed: ${breed.value}, color: ${color.value}, weight: ${weight.value}, height: ${height.value}")
-
-        if (speciesId == -1 || name.value.isBlank() || age.value.isBlank() || breed.value.isBlank() || color.value.isBlank() || weight.value.isBlank() || height.value.isBlank()) {
-
-            showErrors.value = true
-
-        } else {
-            viewModelScope.launch {
-                val newPet = Pet(
-                    name = name.value,
-                    speciesId = speciesId,
-                    age = age.value.toIntOrNull(),
-                    breed = breed.value,
-                    description = description.value,
-                    weight = weight.value.toDoubleOrNull(),
-                    height = height.value.toDoubleOrNull(),
-                    birthDate = birthDate.value,
-                    dateAdopted = dateAdopted.value,
-                    color = color.value,
-                    isMale = isMale.value,
-                    isSterilized = isSterilized.value,
-                    isVaccinated = isVaccinated.value,
-                    image = imageUri.value.toString()
-                )
-                dao.insertPet(newPet)
-                showErrors.value = false
-
-            }
+    fun loadPet(petId: Int?) {
+        if(petId == null || petId == this.petId) {
+            return
         }
+        this.petId = petId
 
-    }
-
-
-    /*
-    EDIT
-     */
-
-    var pet by mutableStateOf<Pet?>(null) // State to hold the pet data
-    fun loadPet(petId: Int) {
         viewModelScope.launch {
-            dao.getPetById(petId).collectLatest { loadedPet -> // Collect latest value from Flow
-                pet = loadedPet // Update pet state with the collected value
-                // Update other state variables with pet data
-                // ...
+            dao.getPetById(petId).collectLatest { loadedPet ->
+                pet.value = loadedPet
+                clearStates(loadedPet)
+
             }
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun updatePet(petId: Int) {
-        // Validate data (similar to AddPetViewModel)
-        // ...
+    fun clearStates(loadedPet: Pet? = pet.value) {
+        // clear all states
+        clearErrorStates()
+        finish.value = false
+        if(petId == null) pet.value = null
+        selectedSpeciesName.value = getSpeciesNameById(loadedPet?.speciesId)
+        name.value = loadedPet?.name ?: ""
+        breed.value = loadedPet?.breed ?: ""
+        description.value = loadedPet?.description ?: ""
+        weight.value = loadedPet?.weight?.toString() ?: ""
+        height.value = loadedPet?.height?.toString() ?: ""
+        birthDate.value = loadedPet?.birthDate
+        adoptedDate.value = loadedPet?.adoptedDate
+        color.value = loadedPet?.color ?: ""
+        isMale.value = loadedPet?.isMale ?: true
+        isSterilized.value = loadedPet?.isSterilized ?: false
+        imageUri.value = if (loadedPet?.image != null) Uri.parse(loadedPet.image) else null
+    }
 
-        val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id ?: -1
-        Log.d("AddPetViewModel", "imageUri: ${imageUri.value} , speciesId: $speciesId, age: ${age.value}, breed: ${breed.value}, color: ${color.value}, weight: ${weight.value}, height: ${height.value}")
+    fun addOrUpdatePet(context: Context = getApplication<Application>().applicationContext) {
+        if(clearAndCheckErrors()) {
+            return
+        }
 
-        if (speciesId == -1 || name.value.isBlank() || age.value.isBlank() || breed.value.isBlank() || color.value.isBlank() || weight.value.isBlank() || height.value.isBlank()) {
 
-            showErrors.value = true
 
+        val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id
+        val imagePath = imageUri.value?.let { saveImageToInternalStorage(context, it) }
+        val constantPetId = petId
+        val newPet = if (constantPetId != null) {
+            Pet(
+                idPet = constantPetId,
+                name = name.value,
+                speciesId = speciesId,
+                breed = breed.value,
+                description = description.value,
+                weight = weight.value.toDoubleOrNull(),
+                height = height.value.toDoubleOrNull(),
+                birthDate = birthDate.value,
+                adoptedDate = adoptedDate.value,
+                color = color.value,
+                isMale = isMale.value,
+                isSterilized = isSterilized.value,
+                image = imagePath
+            )
         } else {
-            viewModelScope.launch {
-                val newPet = Pet(
-                    idPet = petId,
-                    name = name.value,
-                    speciesId = speciesId,
-                    age = age.value.toIntOrNull(),
-                    breed = breed.value,
-                    description = description.value,
-                    weight = weight.value.toDoubleOrNull(),
-                    height = height.value.toDoubleOrNull(),
-                    birthDate = birthDate.value,
-                    dateAdopted = dateAdopted.value,
-                    color = color.value,
-                    isMale = isMale.value,
-                    isSterilized = isSterilized.value,
-                    isVaccinated = isVaccinated.value,
-                    image = imageUri.value.toString()
-                )
-                dao.updatePet(newPet)
-                showErrors.value = false
-
-            }
+            Pet(
+                name = name.value,
+                speciesId = speciesId,
+                breed = breed.value,
+                description = description.value,
+                weight = weight.value.toDoubleOrNull(),
+                height = height.value.toDoubleOrNull(),
+                birthDate = birthDate.value,
+                adoptedDate = adoptedDate.value,
+                color = color.value,
+                isMale = isMale.value,
+                isSterilized = isSterilized.value,
+                image = imagePath
+            )
         }
+        Log.d(
+            "AddPetViewModel",
+            "name: ${name.value} , speciesId: $speciesId, breed: ${breed.value}, color: ${color.value}, weight: ${weight.value}, height: ${height.value}"
+        )
+        viewModelScope.launch {
+            val success = if (constantPetId != null) {
+                dao.updatePet(newPet) > 0
+            } else {
+                dao.insertPet(newPet) != -1L
+            }
+            finish.value = success
+        }
+
+
     }
 
-    fun getSpeciesNameById(speciesId: Int): String {
+    private fun getSpeciesNameById(speciesId: Int?): String {
         val species = speciesList.value.find { it.id == speciesId }
         return species?.name ?: ""
     }
-
 
 
     /*
@@ -178,6 +165,37 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
 
 
+
+    private fun clearAndCheckErrors(): Boolean {
+        // Reset errors
+        clearErrorStates()
+
+        var hasErrors = false
+
+        // Validate fields
+        if (name.value.isBlank()) {
+            nameError.value = "Name cannot be empty\n"
+            hasErrors = true
+        }
+        if( name.value.length > 50) {
+            nameError.value += "Name cannot be longer than 50 characters\n"
+            hasErrors = true
+        }
+
+
+        return hasErrors
+    }
+
+    private fun clearErrorStates() {
+        nameError.value = ""
+        breedError.value = ""
+        descriptionError.value = ""
+        weightError.value = ""
+        heightError.value = ""
+        birthDateError.value = ""
+        adoptedDateError.value = ""
+        colorError.value = ""
+    }
 
 
 }

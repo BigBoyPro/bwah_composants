@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.PetsDB
 import com.example.projectbwah.data.ScheduleType
-import com.google.android.material.slider.BaseOnChangeListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

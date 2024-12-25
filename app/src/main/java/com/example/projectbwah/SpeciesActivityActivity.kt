@@ -1,12 +1,10 @@
 package com.example.projectbwah
 
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,7 +43,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -58,7 +55,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -73,7 +69,6 @@ import java.time.ZoneId
 
 
 class SpeciesActivityActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val speciesId = intent.getIntExtra("speciesId", -1)
@@ -88,8 +83,6 @@ class SpeciesActivityActivity : ComponentActivity() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpeciesActivityScreen(speciesId: Int, speciesName: String?,viewModel: SpeciesActivityViewModel = viewModel()) {
     val speciesActivities by viewModel.speciesActivities.collectAsState(emptyList())
@@ -258,7 +251,6 @@ fun ActivityItem(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityBottomSheet(
@@ -454,7 +446,6 @@ fun AddActivityBottomSheet(
 
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditActivityDialog(
@@ -470,7 +461,8 @@ fun EditActivityDialog(
     var isDefault by remember { mutableStateOf(activity.isDefault) }
 
     val timePickerState = rememberTimePickerState(initialHour = scheduleTime?.hour ?: 0, initialMinute = scheduleTime?.minute ?: 0)
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = scheduleDate?.let { it.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() })
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = scheduleDate?.atStartOfDay(ZoneId.systemDefault())
+        ?.toInstant()?.toEpochMilli())
 
     AlertDialog(
         onDismissRequest = onDismiss,

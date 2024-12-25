@@ -26,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +48,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import com.example.projectbwah.screens.HomeScreen
 import com.example.projectbwah.screens.SearchScreen
 import com.example.projectbwah.screens.SettingsScreen
-import com.example.projectbwah.utils.ThemeHelper
 
 
 class MainActivity : ComponentActivity() {
@@ -59,16 +59,14 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = this.then(
-        composed {
-            clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                onClick()
-            }
+    private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
+        clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) {
+            onClick()
         }
-    )
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +86,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MainScreen()
-
         }
     }
 
@@ -118,9 +115,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun MainScreen(viewModel: MainViewModel = viewModel()) {
-        val navigationBarItems = remember { NavigationBarItems.entries.toTypedArray() }
-        var selectedIndex by remember { mutableIntStateOf(0) }
-        viewModel.insertExamplePets()
+        val navigationBarItems = rememberSaveable { NavigationBarItems.entries.toTypedArray() }
+        var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
         val pets by viewModel.allPets.collectAsState(emptyList())
 
 

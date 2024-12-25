@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 2)
+@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 7)
 @TypeConverters(Converters::class)
 abstract class PetsDB : RoomDatabase() {
     abstract fun PetsDao(): PetsDao
