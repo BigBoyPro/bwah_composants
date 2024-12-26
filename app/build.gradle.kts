@@ -79,6 +79,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.xanimated.navigation.bar)
     implementation(libs.coil.compose)
-
     ksp(libs.androidx.room.compiler)
+    implementation(libs.easycrop)
 }

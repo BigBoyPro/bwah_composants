@@ -20,7 +20,10 @@ interface PetsDao {
     suspend fun updatePet(pet: Pet): Int
 
     @Delete
-    suspend fun deletePet(pet: Pet)
+    suspend fun deletePet(pet: Pet) : Int
+
+    @Query("DELETE FROM pets WHERE idPet = :petId")
+    suspend fun deletePetById(petId: Int)
 
     @Query("SELECT * FROM pets")
     fun getAllPets(): Flow<List<Pet>>

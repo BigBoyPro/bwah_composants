@@ -1,14 +1,11 @@
 package com.example.projectbwah
 
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -36,19 +34,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil.compose.rememberAsyncImagePainter
 import com.example.projectbwah.data.Species
+import com.example.projectbwah.utils.ImageCropper
+import com.example.projectbwah.utils.saveBitmapToUri
 import com.exyte.animatednavbar.utils.toDp
+import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
@@ -61,30 +64,43 @@ fun PetDialog(
     petId: Int?, onDismissRequest: () -> Unit,
     viewModel: PetViewModel = viewModel(key = petId?.toString() ?: "newPet")
 ) {
+    var showRevertChangesDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false) }
 
     val newPet by rememberSaveable { mutableStateOf(petId == null) }
     var editMode by rememberSaveable { mutableStateOf(petId == null) }
 
     val pet by viewModel.pet
+    var finished by viewModel.finished
+
+    val newOnDismissRequest = {
+        if (!showRevertChangesDialog && !showDeleteConfirmationDialog && editMode) {
+            if (viewModel.hasChanges() && !finished) {
+                showRevertChangesDialog = true
+            } else {
+                viewModel.clearStates()
+                if (newPet) onDismissRequest()
+                else editMode = false
+            }
+        } else {
+            if (newPet) viewModel.clearStates()
+            onDismissRequest()
+        }
+    }
+    if (finished) {
+        if (newPet) {
+            viewModel.clearStates()
+            onDismissRequest()
+        } else editMode = false
+
+        finished = false
+    }
+
     if (petId != null && pet == null) {
         viewModel.loadPet(petId)
     }
 
-    val newOnDismissRequest = {
-        if (editMode) {
-            viewModel.clearStates()
-            editMode = false
-        } else {
-            if (newPet) {
-                viewModel.clearStates()
-            }
-            onDismissRequest()
-        }
-    }
 
-    if (viewModel.finish.value) {
-        newOnDismissRequest()
-    }
     Popup(
         onDismissRequest = newOnDismissRequest,
         properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
@@ -99,7 +115,18 @@ fun PetDialog(
 
         ) {
 
-            PetScreen(petId, newOnDismissRequest, newPet, editMode, { editMode = it }, viewModel)
+            PetScreen(
+                petId,
+                newOnDismissRequest,
+                newPet,
+                editMode,
+                { editMode = it },
+                showRevertChangesDialog,
+                { showRevertChangesDialog = it },
+                showDeleteConfirmationDialog,
+                { showDeleteConfirmationDialog = it },
+                viewModel
+            )
         }
     }
 }
@@ -112,6 +139,10 @@ private fun PetScreen(
     newPet: Boolean,
     editMode: Boolean,
     onEditModeChange: (Boolean) -> Unit,
+    showRevertChangesDialog: Boolean,
+    onShowRevertChangesDialog: (Boolean) -> Unit,
+    showDeleteConfirmationDialog: Boolean,
+    onShowDeleteConfirmationDialog: (Boolean) -> Unit,
     viewModel: PetViewModel = viewModel(key = petId?.toString() ?: "newPet")
 ) {
 
@@ -140,53 +171,68 @@ private fun PetScreen(
     var selectedSpeciesName by viewModel.selectedSpeciesName
 
 
+    var dialogOffset by remember { mutableStateOf(Offset.Zero) }
 
-   val dialogOffset = remember { mutableStateOf(Offset.Zero) }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { coordinates ->
                 val position = coordinates.positionOnScreen()
-                dialogOffset.value = position
+                dialogOffset = position
             },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        IconButton(onClick = onDismissRequest) {
+                        IconButton(
+                            onClick = onDismissRequest,
+                            modifier = Modifier.align(Alignment.CenterStart)
+                        ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
+
+                        Text(
+                            if (newPet) "Add Pet" else if (!editMode) name else "Edit Pet",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                         if (newPet) {
-                            Text("Add Pet")
-                            IconButton(onClick = { viewModel.clearStates() }) {
+                            IconButton(
+                                onClick = { viewModel.clearStates() },
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            ) {
                                 Icon(Icons.Filled.Refresh, contentDescription = "Clear")
                             }
                         } else {
-                            if (!editMode) {
-                                Text(name)
-                                IconButton(onClick = { onEditModeChange(true) }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "Edit")
-
+                            Row(
+                                modifier = Modifier.align(Alignment.CenterEnd),
+                                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                if (!editMode) {
+                                    IconButton(onClick = { onEditModeChange(true) }) {
+                                        Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                                    }
+                                } else {
+                                    IconButton(onClick = { onDismissRequest() }) {
+                                        Icon(Icons.Filled.Clear, contentDescription = "Cancel")
+                                    }
                                 }
-                            } else {
-                                Text("Edit Pet")
-                                IconButton(onClick = {
-                                    viewModel.clearStates()
-                                    onEditModeChange(false)
-                                }) {
-                                    Icon(Icons.Filled.Clear, contentDescription = "Cancel")
+                                IconButton(onClick = { onShowDeleteConfirmationDialog(true) }) {
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        contentDescription = "Delete"
+                                    )
                                 }
                             }
-                        }
 
+                        }
                     }
+
                 }
             )
         },
@@ -194,7 +240,6 @@ private fun PetScreen(
             if (editMode) {
                 FloatingActionButton(onClick = {
                     viewModel.addOrUpdatePet()
-                    if (newPet) viewModel.clearStates()
                 }) {
                     Icon(Icons.Filled.Done, contentDescription = "Save")
                 }
@@ -213,15 +258,12 @@ private fun PetScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-            val launcher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.GetContent()
-            ) { result ->
-                imageUri = result
-            }
+
             ImagePicker(
-                selectedImage = imageUri,
+                imageUri = imageUri,
                 isEditable = editMode,
-                onImageClick = { launcher.launch("image/*") })
+                onImageUri = { imageUri = it }
+            )
 
             TextFieldWithError(
                 label = "Name",
@@ -239,7 +281,7 @@ private fun PetScreen(
                 selectedItem = selectedSpeciesName,
                 onItemSelected = { selectedSpeciesName = it },
                 isEditable = editMode,
-                dialogOffset = dialogOffset.value
+                dialogOffset = dialogOffset
             )
 
             TextFieldWithError(
@@ -307,7 +349,11 @@ private fun PetScreen(
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = isMale, onClick = { isMale = true }, enabled = editMode)
+                    RadioButton(
+                        selected = isMale,
+                        onClick = { isMale = true },
+                        enabled = editMode
+                    )
                     Text("Male")
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -329,50 +375,47 @@ private fun PetScreen(
 
             }
 
-            // Sterilized and Vaccinated checkboxes
+            val title = if (newPet) "Discard Changes" else "Revert Changes"
+            val text =
+                if (newPet) "Are you sure you want to discard the changes and go back?" else "Are you sure you want to revert the changes and stop editing?"
+            val confirm = if (newPet) "Discard" else "Revert"
+            val dismiss = "Cancel"
 
+            if (showRevertChangesDialog) {
+                ConfirmDismissDialog(
+                    title = title,
+                    text = text,
+                    confirm = confirm,
+                    dismiss = dismiss,
+                    onConfirm = {
+                        viewModel.clearStates()
+                        if (newPet) {
+                            onDismissRequest()
+                        } else {
+                            onEditModeChange(false)
+                        }
+                        onShowRevertChangesDialog(false)
+                    },
+                    onDismiss = { onShowRevertChangesDialog(false) }
+                )
+            }
 
-            // Image handling (replace with your implementation)
-            // ...
-
-
-            // Add the delete button
-
-
-//            var showDeleteConfirmationDialog by viewModel.showDeleteConfirmationDialog
-//
-//            if (isEdit) { // Only show delete button in edit mode
-//                IconButton(onClick = {
-//                    // Show confirmation dialog before deleting
-//                   showDeleteConfirmationDialog = true
-//                }) {
-//                    Icon(Icons.Filled.Delete, contentDescription = "Delete")
-//                }
-//            }
-//
-//            // Delete confirmation dialog
-//            if (showDeleteConfirmationDialog) {
-//                AlertDialog(
-//                    onDismissRequest = { showDeleteConfirmationDialog = false },
-//                    title = { Text("Delete Pet") },
-//                    text = { Text("Are you sure you want to delete this pet?") },
-//                    confirmButton = {
-//                        TextButton(onClick = {
-//                            showDeleteConfirmationDialog = false
-//                            viewModel.deletePet(petId)
-//                            (context as? ComponentActivity)?.finish() // Close activity after deleting
-//                        }) {
-//                            Text("Delete")
-//                        }
-//                    },
-//                    dismissButton = {
-//                        TextButton(onClick = { showDeleteConfirmationDialog = false }) {
-//                            Text("Cancel")
-//                        }
-//                    }
-//                )
-//            }
-
+            if (showDeleteConfirmationDialog) {
+                ConfirmDismissDialog(
+                    title = "Delete Pet",
+                    text = "Are you sure you want to delete this pet?",
+                    confirm = "Delete",
+                    dismiss = "Cancel",
+                    onConfirm = {
+                        if (petId != null) {
+                            onDismissRequest()
+                            onShowDeleteConfirmationDialog(false)
+                            viewModel.deletePet()
+                        }
+                    },
+                    onDismiss = { onShowDeleteConfirmationDialog(false) }
+                )
+            }
 
         }
     }
@@ -388,7 +431,6 @@ fun CustomDropdownMenu(
     dialogOffset: Offset
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var selectedText by rememberSaveable { mutableStateOf(selectedItem) }
 
     BoxWithConstraints {
         val textFieldWidth = constraints.maxWidth
@@ -397,8 +439,8 @@ fun CustomDropdownMenu(
 
         Box(contentAlignment = Alignment.TopStart) {
             OutlinedTextField(
-                value = selectedText,
-                onValueChange = { selectedText = it },
+                value = selectedItem,
+                onValueChange = { /* Read-only */ },
                 label = { Text("Species") },
                 readOnly = true,
                 trailingIcon = {
@@ -436,16 +478,23 @@ fun CustomDropdownMenu(
                     (offset.y + dialogOffset.y).toDp()
                 )
             ) {
+                // add Empty item
                 speciesList.forEach { species ->
                     DropdownMenuItem(
                         text = { Text(species.name) },
                         onClick = {
-                            selectedText = species.name
                             onItemSelected(species.name)
                             expanded = false
                         }
                     )
                 }
+                DropdownMenuItem(
+                    text = { Text("Other") },
+                    onClick = {
+                        onItemSelected("Other")
+                        expanded = false
+                    }
+                )
             }
         }
     }
@@ -486,8 +535,9 @@ private fun DatePickerTextFieldWithError(
     onDateSelected: (LocalDate?) -> Unit,
     isEditable: Boolean,
     error: String = "",
-    dateFormatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault()),
-    ) {
+    dateFormatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        .withLocale(Locale.getDefault()),
+) {
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
     if (isEditable || date != null) {
@@ -577,46 +627,78 @@ private fun DatePicker(
     }
 }
 
-
 @Composable
-fun ImagePicker(selectedImage: Uri?, onImageClick: () -> Unit, isEditable: Boolean) {
-    if (selectedImage != null) {
-        val file = selectedImage.path?.let { File(it) }
+fun ImagePicker(
+    imageUri: Uri?,
+    onImageUri: (Uri?) -> Unit,
+    aspectRatio: Float = 16f / 9f,
+    isEditable: Boolean
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+
+    var onPickImage by remember { mutableStateOf({}) }
+
+
+    if(isEditable) {
+        ImageCropper(
+            aspectRatio = aspectRatio,
+            context = context,
+            onImage = {
+                coroutineScope.launch {
+                    val uri = saveBitmapToUri(context, it.asAndroidBitmap())
+                    onImageUri(uri)
+                }
+            },
+            onOnPickImage = { onPickImage = it }
+        )
+
+    }
+
+    if (imageUri != null) {
         Image(
-            painter = rememberAsyncImagePainter(if (file != null && file.exists()) file else selectedImage),
+            painter = rememberAsyncImagePainter(imageUri),
             contentDescription = null,
             modifier = Modifier
-                .size(200.dp)
-                .clickable { if (isEditable) onImageClick() }
+                .fillMaxWidth()
+                .aspectRatio(aspectRatio)
+                .clip(MaterialTheme.shapes.medium)
+                .then(if (isEditable) Modifier.clickable { onPickImage() } else Modifier)
         )
-    } else {
-        if (isEditable) {
-            IconButton(onClick = { onImageClick() }) {
+    }else{
+        if(isEditable) {
+            IconButton(onClick = onPickImage) {
                 Icon(Icons.Filled.AccountBox, contentDescription = "Add Image")
             }
         }
     }
-
-
 }
-
 @Composable
-fun MinimalDialog(onDismissRequest: () -> Unit) {
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "Please fill in all fields",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center),
-                textAlign = TextAlign.Center,
-            )
+fun ConfirmDismissDialog(
+    title: String,
+    text: String,
+    confirm: String,
+    dismiss: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(confirm)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(dismiss)
+            }
         }
-    }
+    )
 }
+
+
+
