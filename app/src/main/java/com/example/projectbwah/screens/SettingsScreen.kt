@@ -102,6 +102,23 @@ fun SettingsScreen(
                         context.startActivity(iii)
                     }
                 }
+
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(6.dp)
+                            .clickable {
+                                val iii = Intent(context, SpeciesActivityActivity::class.java)
+                                // speciesId = null
+                                iii.putExtra("speciesId", null as Int?)
+                                iii.putExtra("speciesName", "Default")
+                                context.startActivity(iii)
+                            } // Make the Card clickable
+                    ) {
+                        Text("Default", modifier = Modifier.padding(16.dp))
+                    }
+                }
             }
             // Add Species Item
             OutlinedButton(
@@ -154,7 +171,7 @@ fun SpeciesListItem(species: Species, onSpeciesClick: (Species) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(6.dp)
             .clickable { onSpeciesClick(species) } // Make the Card clickable
     ) {
         Text(species.name, modifier = Modifier.padding(16.dp))

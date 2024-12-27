@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 enum class ScheduleType {
-    DAILY, WEEKLY, ONCE
+    DAILY, WEEKLY, MONTHLY, ONCE
 }
 
 @Entity(
@@ -22,7 +22,7 @@ enum class ScheduleType {
             onDelete = ForeignKey.SET_NULL
         )
     ],
-    indices = [Index(value = ["speciesId"])]
+    indices = [Index(value = ["idPet"], unique = true), Index(value = ["speciesId"])]
 )
 data class Pet(
     @PrimaryKey(autoGenerate = true) val idPet: Int = 0,
@@ -46,25 +46,58 @@ data class Species(
     @ColumnInfo(index = true) val name: String
 )
 
-@Entity(tableName = "default_activities")
-data class DefaultActivity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val name: String,
-    val speciesId: Int,
-    val scheduleType: ScheduleType?,
-    val scheduleTime: LocalTime?,
-    val scheduleDayOfWeek: Int?,
-    val scheduleDate: LocalDate?,
-    val isDefault: Boolean
+
+// Base class with common properties
+open class ActivityBase(
+    open val id: Int = 0,
+    open val name: String,
+    open val scheduleType: ScheduleType,
+    open val scheduleTime: LocalTime?,
+    open val scheduleDayOfWeekOrMonth: Int?
 )
 
-@Entity(tableName = "pet_activities")
-data class PetActivity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val petId: Int,
-    val activityName: String,
-    val scheduleType: ScheduleType,
-    val scheduleTime: LocalTime?,
-    val scheduleDayOfWeek: Int?,
-    val scheduleDate: LocalDate?
+// DefaultActivity class inheriting from ActivityBase
+@Entity(
+    tableName = "default_activities",
+    foreignKeys = [
+        ForeignKey(
+            entity = Species::class,
+            parentColumns = ["id"],
+            childColumns = ["speciesId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["id"], unique = true), Index(value = ["speciesId"])]
 )
+data class DefaultActivity(
+    @PrimaryKey(autoGenerate = true) override val id: Int = 0,
+    override val name: String,
+    val speciesId: Int? = null,
+    val isDefault: Boolean,
+    override val scheduleType: ScheduleType,
+    override val scheduleTime: LocalTime?,
+    override val scheduleDayOfWeekOrMonth: Int?
+) : ActivityBase(id, name, scheduleType, scheduleTime, scheduleDayOfWeekOrMonth)
+
+// PetActivity class inheriting from ActivityBase
+@Entity(
+    tableName = "pet_activities",
+    foreignKeys = [
+        ForeignKey(
+            entity = Pet::class,
+            parentColumns = ["idPet"],
+            childColumns = ["petId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["id"], unique = true), Index(value = ["petId"])]
+)
+data class PetActivity(
+    @PrimaryKey(autoGenerate = true) override val id: Int = 0,
+    val petId: Int,
+    override val name: String,
+    override val scheduleType: ScheduleType,
+    override val scheduleTime: LocalTime?,
+    override val scheduleDayOfWeekOrMonth: Int?,
+    val scheduleDate: LocalDate?
+) : ActivityBase(id, name, scheduleType, scheduleTime, scheduleDayOfWeekOrMonth)

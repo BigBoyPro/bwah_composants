@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
@@ -33,26 +32,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil.compose.rememberAsyncImagePainter
-import com.example.projectbwah.data.Species
+import com.example.projectbwah.utils.ConfirmDismissDialog
+import com.example.projectbwah.utils.CustomPopupDropdownMenu
+import com.example.projectbwah.utils.DatePickerTextFieldWithError
 import com.example.projectbwah.utils.ImageCropper
+import com.example.projectbwah.utils.TextFieldWithError
 import com.example.projectbwah.utils.saveBitmapToUri
-import com.exyte.animatednavbar.utils.toDp
 import kotlinx.coroutines.launch
-import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.FormatStyle
@@ -61,7 +56,8 @@ import java.util.Locale
 
 @Composable
 fun PetDialog(
-    petId: Int?, onDismissRequest: () -> Unit,
+    petId: Int?,
+    onDismissRequest: () -> Unit,
     viewModel: PetViewModel = viewModel(key = petId?.toString() ?: "newPet")
 ) {
     var showRevertChangesDialog by rememberSaveable { mutableStateOf(false) }
@@ -116,7 +112,6 @@ fun PetDialog(
         ) {
 
             PetScreen(
-                petId,
                 newOnDismissRequest,
                 newPet,
                 editMode,
@@ -134,7 +129,6 @@ fun PetDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PetScreen(
-    petId: Int?,
     onDismissRequest: () -> Unit,
     newPet: Boolean,
     editMode: Boolean,
@@ -143,7 +137,7 @@ private fun PetScreen(
     onShowRevertChangesDialog: (Boolean) -> Unit,
     showDeleteConfirmationDialog: Boolean,
     onShowDeleteConfirmationDialog: (Boolean) -> Unit,
-    viewModel: PetViewModel = viewModel(key = petId?.toString() ?: "newPet")
+    viewModel: PetViewModel
 ) {
 
     var name by viewModel.name
@@ -273,13 +267,15 @@ private fun PetScreen(
                 error = nameError
             )
 
-            // Species selection (replace with your implementation)
-            // DropdownMenu for species selection
 
-            CustomDropdownMenu(
-                speciesList = speciesList,
+            CustomPopupDropdownMenu(
+                label = "Species",
+                placeholder = "Select Species",
+                itemsList = speciesList.map { it.name },
                 selectedItem = selectedSpeciesName,
-                onItemSelected = { selectedSpeciesName = it },
+                onItemSelected = { _, item ->
+                    selectedSpeciesName = item
+                },
                 isEditable = editMode,
                 dialogOffset = dialogOffset
             )
@@ -407,7 +403,7 @@ private fun PetScreen(
                     confirm = "Delete",
                     dismiss = "Cancel",
                     onConfirm = {
-                        if (petId != null) {
+                        if (!newPet) {
                             onDismissRequest()
                             onShowDeleteConfirmationDialog(false)
                             viewModel.deletePet()
@@ -421,211 +417,7 @@ private fun PetScreen(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun CustomDropdownMenu(
-    speciesList: List<Species>,
-    selectedItem: String,
-    onItemSelected: (String) -> Unit,
-    isEditable: Boolean,
-    dialogOffset: Offset
-) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
 
-    BoxWithConstraints {
-        val textFieldWidth = constraints.maxWidth
-        var offset = Offset.Zero
-        val density = LocalDensity.current
-
-        Box(contentAlignment = Alignment.TopStart) {
-            OutlinedTextField(
-                value = selectedItem,
-                onValueChange = { /* Read-only */ },
-                label = { Text("Species") },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { if (isEditable) expanded = true }
-                    .pointerInteropFilter {
-                        offset = Offset(it.x, it.y)
-                        false
-                    },
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = OutlinedTextFieldDefaults.colors().unfocusedTextColor,
-                    disabledContainerColor = OutlinedTextFieldDefaults.colors().unfocusedContainerColor,
-                    disabledBorderColor = OutlinedTextFieldDefaults.colors().unfocusedIndicatorColor,
-                    disabledLeadingIconColor = OutlinedTextFieldDefaults.colors().unfocusedLeadingIconColor,
-                    disabledTrailingIconColor = OutlinedTextFieldDefaults.colors().unfocusedTrailingIconColor,
-                    disabledLabelColor = OutlinedTextFieldDefaults.colors().unfocusedLabelColor,
-                    disabledPlaceholderColor = OutlinedTextFieldDefaults.colors().unfocusedPlaceholderColor,
-                    disabledSupportingTextColor = OutlinedTextFieldDefaults.colors().unfocusedSupportingTextColor,
-                    disabledPrefixColor = OutlinedTextFieldDefaults.colors().unfocusedPrefixColor,
-                    disabledSuffixColor = OutlinedTextFieldDefaults.colors().unfocusedSuffixColor,
-                )
-            )
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier
-                    .width(with(density) { textFieldWidth.toDp() }),
-                offset = DpOffset(
-                    (offset.x + dialogOffset.x).toDp(),
-                    (offset.y + dialogOffset.y).toDp()
-                )
-            ) {
-                // add Empty item
-                speciesList.forEach { species ->
-                    DropdownMenuItem(
-                        text = { Text(species.name) },
-                        onClick = {
-                            onItemSelected(species.name)
-                            expanded = false
-                        }
-                    )
-                }
-                DropdownMenuItem(
-                    text = { Text("Other") },
-                    onClick = {
-                        onItemSelected("Other")
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TextFieldWithError(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isEditable: Boolean,
-    isNumber: Boolean = false,
-    error: String = ""
-) {
-
-    if (isEditable || value.isNotBlank()) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text),
-            readOnly = !isEditable
-        )
-        if (error.isNotEmpty()) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DatePickerTextFieldWithError(
-    label: String,
-    date: LocalDate?,
-    onDateSelected: (LocalDate?) -> Unit,
-    isEditable: Boolean,
-    error: String = "",
-    dateFormatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-        .withLocale(Locale.getDefault()),
-) {
-    var showDatePicker by rememberSaveable { mutableStateOf(false) }
-
-    if (isEditable || date != null) {
-        OutlinedTextField(
-            value = date?.format(dateFormatter) ?: "",
-            onValueChange = { /* Read-only */ },
-            label = { Text(label) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { if (isEditable) showDatePicker = true },
-            readOnly = true,
-            enabled = !isEditable,
-
-            // reset colors to enabled
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor = OutlinedTextFieldDefaults.colors().unfocusedTextColor,
-                disabledContainerColor = OutlinedTextFieldDefaults.colors().unfocusedContainerColor,
-                disabledBorderColor = OutlinedTextFieldDefaults.colors().unfocusedIndicatorColor,
-                disabledLeadingIconColor = OutlinedTextFieldDefaults.colors().unfocusedLeadingIconColor,
-                disabledTrailingIconColor = OutlinedTextFieldDefaults.colors().unfocusedTrailingIconColor,
-                disabledLabelColor = OutlinedTextFieldDefaults.colors().unfocusedLabelColor,
-                disabledPlaceholderColor = OutlinedTextFieldDefaults.colors().unfocusedPlaceholderColor,
-                disabledSupportingTextColor = OutlinedTextFieldDefaults.colors().unfocusedSupportingTextColor,
-                disabledPrefixColor = OutlinedTextFieldDefaults.colors().unfocusedPrefixColor,
-                disabledSuffixColor = OutlinedTextFieldDefaults.colors().unfocusedSuffixColor,
-            )
-        )
-        if (error.isNotEmpty()) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        if (showDatePicker) {
-            DatePicker(
-                date = date,
-                onDateSelected = onDateSelected,
-                onDismissRequest = { showDatePicker = false }
-            )
-        }
-    }
-
-}
-
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun DatePicker(
-    date: LocalDate?,
-    onDateSelected: (LocalDate?) -> Unit,
-    onDismissRequest: () -> Unit
-) {
-    val datePickerState = rememberDatePickerState()
-    datePickerState.selectedDateMillis = date?.atStartOfDay(ZoneOffset.UTC)
-        ?.toInstant()
-        ?.toEpochMilli()
-
-    DatePickerDialog(
-
-        onDismissRequest = onDismissRequest,
-        confirmButton = {
-            Button(onClick = {
-                onDateSelected(
-                    datePickerState.selectedDateMillis?.let {
-                        Instant.ofEpochMilli(it)
-                            .atZone(ZoneOffset.UTC)
-                            .toLocalDate()
-                    },
-                )
-                onDismissRequest()
-            }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismissRequest) {
-                Text("Cancel")
-            }
-        }
-
-    ) {
-        DatePicker(
-            state = datePickerState,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
 
 @Composable
 fun ImagePicker(
@@ -641,7 +433,7 @@ fun ImagePicker(
     var onPickImage by remember { mutableStateOf({}) }
 
 
-    if(isEditable) {
+    if (isEditable) {
         ImageCropper(
             aspectRatio = aspectRatio,
             context = context,
@@ -666,38 +458,13 @@ fun ImagePicker(
                 .clip(MaterialTheme.shapes.medium)
                 .then(if (isEditable) Modifier.clickable { onPickImage() } else Modifier)
         )
-    }else{
-        if(isEditable) {
+    } else {
+        if (isEditable) {
             IconButton(onClick = onPickImage) {
                 Icon(Icons.Filled.AccountBox, contentDescription = "Add Image")
             }
         }
     }
-}
-@Composable
-fun ConfirmDismissDialog(
-    title: String,
-    text: String,
-    confirm: String,
-    dismiss: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(confirm)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(dismiss)
-            }
-        }
-    )
 }
 
 
