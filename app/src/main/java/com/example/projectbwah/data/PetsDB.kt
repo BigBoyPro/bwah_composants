@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
-@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 1)
+@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class PetsDB : RoomDatabase() {
     abstract fun PetsDao(): PetsDao
@@ -49,6 +49,7 @@ abstract class PetsDB : RoomDatabase() {
         suspend fun populateDatabase(petsDao: PetsDao) {
             // Insert default species
             val defaultSpecies = listOf(
+                Species(name = "Other"),
                 Species(name = "Dog"),
                 Species(name = "Cat"),
                 Species(name = "Bird"),
@@ -56,8 +57,7 @@ abstract class PetsDB : RoomDatabase() {
                 Species(name = "Rabbit"),
                 Species(name = "Hamster"),
                 Species(name = "Turtle"),
-                Species(name = "Reptile"),
-                Species(name = "Other")
+                Species(name = "Reptile")
             )
             defaultSpecies.forEach { petsDao.insertSpecies(it) }
             // Insert default activities for each species
@@ -70,38 +70,39 @@ abstract class PetsDB : RoomDatabase() {
 
             // Insert species-specific activities
             val speciesSpecificActivities = listOf(
+                // Other activities
+                DefaultActivity(name = "Cleaning", speciesId = 1, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
+
                 // Dog activities
-                DefaultActivity(name = "Walk", speciesId = 1, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(7, 0), scheduleDayOfWeekOrMonth = null),
-                DefaultActivity(name = "Play", speciesId = 1, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(17, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Walk", speciesId = 2, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(7, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Play", speciesId = 2, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(17, 0), scheduleDayOfWeekOrMonth = null),
 
                 // Cat activities
-                DefaultActivity(name = "Litter Box Cleaning", speciesId = 2, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = null),
-                DefaultActivity(name = "Play", speciesId = 2, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(18, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Litter Box Cleaning", speciesId = 3, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Play", speciesId = 3, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(18, 0), scheduleDayOfWeekOrMonth = null),
 
                 // Bird activities
-                DefaultActivity(name = "Cage Cleaning", speciesId = 3, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
-                DefaultActivity(name = "Play", speciesId = 3, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(16, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Cage Cleaning", speciesId = 4, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Play", speciesId = 4, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(16, 0), scheduleDayOfWeekOrMonth = null),
 
                 // Fish activities
-                DefaultActivity(name = "Tank Cleaning", speciesId = 4, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Tank Cleaning", speciesId = 5, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
 
                 // Rabbit activities
-                DefaultActivity(name = "Cage Cleaning", speciesId = 5, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Cage Cleaning", speciesId = 6, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
                 DefaultActivity(name = "Play", speciesId = 5, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(17, 0), scheduleDayOfWeekOrMonth = null),
 
                 // Hamster activities
-                DefaultActivity(name = "Cage Cleaning", speciesId = 6, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
-                DefaultActivity(name = "Play", speciesId = 6, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(18, 0), scheduleDayOfWeekOrMonth = null),
+                DefaultActivity(name = "Cage Cleaning", speciesId = 7, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Play", speciesId = 7, isDefault = false, scheduleType = ScheduleType.DAILY, scheduleTime = LocalTime.of(18, 0), scheduleDayOfWeekOrMonth = null),
 
                 // Turtle activities
-                DefaultActivity(name = "Tank Cleaning", speciesId = 7, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Tank Cleaning", speciesId = 8, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1),
 
                 // Reptile activities
-                DefaultActivity(name = "Tank Cleaning", speciesId = 8, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
+                DefaultActivity(name = "Tank Cleaning", speciesId = 9, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(9, 0), scheduleDayOfWeekOrMonth = 1),
 
-                // Other activities
-                DefaultActivity(name = "Cleaning", speciesId = 9, isDefault = false, scheduleType = ScheduleType.WEEKLY, scheduleTime = LocalTime.of(10, 0), scheduleDayOfWeekOrMonth = 1)
-            )
+                           )
             speciesSpecificActivities.forEach { petsDao.insertDefaultActivity(it) }
 
         }

@@ -240,7 +240,7 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
 
     }
     if (showPetDialog) {
-        PetDialog(petId = selectedPetId, onDismissRequest = { showPetDialog = false })
+        PetDialog(parameterPetId = selectedPetId, onDismissRequest = { showPetDialog = false })
     }
 
     // Delete button

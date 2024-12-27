@@ -5,22 +5,31 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.Pet
+import com.example.projectbwah.data.PetActivity
 import com.example.projectbwah.data.PetsDB
+import com.example.projectbwah.data.Species
+import com.example.projectbwah.data.toPetActivity
 import com.example.projectbwah.utils.moveFileToInternalStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class PetViewModel(application: Application) : AndroidViewModel(application) {
     private val dao by lazy { PetsDB.getDB(application).PetsDao() }
 
-    private var petId: Int? = null
+    var petId = mutableStateOf<Int?>(null)
     var pet = mutableStateOf<Pet?>(null)
     var finished = mutableStateOf(false)
 
@@ -43,28 +52,58 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     var isMale = mutableStateOf(true)
     var isSterilized = mutableStateOf(false)
     var imageUri = mutableStateOf<Uri?>(null)
-    var selectedSpeciesName = mutableStateOf("Other")
+    var selectedSpeciesName = mutableStateOf("")
 
+
+    private val _petActivities = MutableStateFlow<List<PetActivity>>(emptyList())
+    val petActivities: StateFlow<List<PetActivity>> = _petActivities
+
+    private val _editingActivity = MutableStateFlow<PetActivity?>(null)
+    val editingActivity: StateFlow<PetActivity?> = _editingActivity.asStateFlow()
+
+    var selectedActivities = mutableStateListOf(*emptyArray<PetActivity>())
 
     val speciesList = dao.getAllSpecies().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+    init {
+        viewModelScope.launch {
+            speciesList.collectLatest { newSpeciesList ->
+                selectedSpeciesName.value = getSpeciesNameById(pet.value?.speciesId , newSpeciesList)
+            }
+        }
+    }
+
+
+    fun onEditActivity(activity: PetActivity?) {
+        _editingActivity.value = activity
+    }
 
     fun loadPet(petId: Int?) {
-        if (petId == null || petId == this.petId) {
+        if (petId == null || petId == this.petId.value) {
             return
         }
-        this.petId = petId
+        this.petId.value = petId
 
         viewModelScope.launch {
             dao.getPetById(petId).collectLatest { loadedPet ->
                 pet.value = loadedPet
                 clearStates(loadedPet)
+                getPetActivities(petId)
+             }
+        }
+    }
+
+    private fun getPetActivities(petId: Int) {
+        viewModelScope.launch {
+            dao.getPetActivitiesByPetId(petId).collectLatest { activities ->
+                _petActivities.value = activities
             }
         }
     }
+
 
     fun hasChanges(): Boolean {
         val loadedPet = pet.value
@@ -80,7 +119,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     !isMale.value ||
                     isSterilized.value ||
                     imageUri.value != null ||
-                    selectedSpeciesName.value != "Other"
+                    selectedSpeciesName.value != ""
         } else {
             return name.value != loadedPet.name ||
                     breed.value != loadedPet.breed.orEmpty() ||
@@ -100,7 +139,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     fun clearStates(loadedPet: Pet? = pet.value) {
         // clear all states
         clearErrorStates()
-        if (petId == null) pet.value = null
+        if (petId.value == null) pet.value = null
         selectedSpeciesName.value = getSpeciesNameById(loadedPet?.speciesId)
         name.value = loadedPet?.name ?: ""
         breed.value = loadedPet?.breed ?: ""
@@ -113,6 +152,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         isMale.value = loadedPet?.isMale ?: true
         isSterilized.value = loadedPet?.isSterilized ?: false
         imageUri.value = if (loadedPet?.image != null) Uri.parse(loadedPet.image) else null
+
+        _editingActivity.value = null
+        selectedActivities.clear()
+
     }
 
     fun addOrUpdatePet(context: Context = getApplication<Application>().applicationContext) {
@@ -121,7 +164,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
         val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id
         val imagePath = imageUri.value?.let { moveFileToInternalStorage(context, it) }
-        val constantPetId = petId
+        val constantPetId = petId.value
         val newPet = if (constantPetId != null) {
             Pet(
                 idPet = constantPetId,
@@ -161,7 +204,11 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val success: Boolean
             if (constantPetId == null) {
-                success = dao.insertPet(newPet) != -1L
+                val newId = dao.insertPet(newPet)
+                success = newId != -1L
+                if (success) {
+                    petId.value = newId.toInt()
+                }
             } else {
                 success = dao.updatePet(newPet) > 0
                 if (success) pet.value = newPet
@@ -170,9 +217,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun getSpeciesNameById(speciesId: Int?): String {
-        val species = speciesList.value.find { it.id == speciesId }
-        return species?.name ?: "Other"
+    private fun getSpeciesNameById(speciesId: Int?, list: List<Species> = speciesList.value): String {
+        val species = list.find { it.id == speciesId }
+        return species?.name ?: ""
     }
 
 
@@ -181,7 +228,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
      */
 
     fun deletePet() {
-        val loadedPetId = petId ?: return
+        val loadedPetId = petId.value ?: return
         viewModelScope.launch {
             dao.deletePetById(loadedPetId)
             finished.value = true
@@ -252,6 +299,34 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         birthDateError.value = birthDateError.value.trim()
         adoptedDateError.value = adoptedDateError.value.trim()
         colorError.value = colorError.value.trim()
+    }
+
+    fun deleteActivity(activity: PetActivity) {
+        viewModelScope.launch {
+            dao.deletePetActivityById(activity.id)
+        }
+    }
+
+    fun insertActivities() {
+        val petId = petId.value ?: return
+        val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id
+
+        viewModelScope.launch {
+            val defaultActivities = withContext(Dispatchers.IO) {
+                dao.getDefaultDefaultActivitiesList()
+            }
+            _petActivities.value += defaultActivities.map { it.toPetActivity(petId) }
+
+            if (speciesId != null) {
+                val speciesActivities = withContext(Dispatchers.IO) {
+                    dao.getDefaultActivitiesListBySpeciesId(speciesId)
+                }
+                _petActivities.value += speciesActivities.map { it.toPetActivity(petId) }
+            }
+            _petActivities.value.forEach { activity ->
+                dao.insertPetActivity(activity)
+            }
+        }
     }
 
 }

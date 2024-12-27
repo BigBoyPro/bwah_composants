@@ -50,7 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.exyte.animatednavbar.utils.toDp
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.PagerState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -89,6 +93,17 @@ fun moveFileToInternalStorage(context: Context, uri: Uri): String? {
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }
+}
+
+
+@OptIn(ExperimentalPagerApi::class)
+fun PagerState.goToNextPage(coroutineScope: CoroutineScope) {
+    val nextPage = currentPage + 1
+    if (nextPage < pageCount) {
+        coroutineScope.launch {
+            animateScrollToPage(nextPage)
+        }
     }
 }
 

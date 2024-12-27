@@ -1,6 +1,7 @@
 package com.example.projectbwah.utils
 
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,9 +11,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -24,9 +27,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.mr0xf00.easycrop.AspectRatio
 import com.mr0xf00.easycrop.CropError
 import com.mr0xf00.easycrop.CropResult
 import com.mr0xf00.easycrop.CropState
+import com.mr0xf00.easycrop.CropperStyle
+import com.mr0xf00.easycrop.DefaultCropperStyle
 import com.mr0xf00.easycrop.crop
 import com.mr0xf00.easycrop.rememberImageCropper
 import com.mr0xf00.easycrop.rememberImagePicker
@@ -43,7 +49,7 @@ fun ImageCropper(
 ) {
     val imageCropper = rememberImageCropper()
 
-    var cropResult by rememberSaveable { mutableStateOf<CropResult?>(null) }
+    var cropResult by remember { mutableStateOf<CropResult?>(null) }
     var alreadyCropped by rememberSaveable { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
@@ -73,6 +79,11 @@ fun ImageCropper(
             state = state,
             cropControls = { },
             topBar = { CustomTopBar(it) },
+            style = CropperStyle(
+                backgroundColor = MaterialTheme.colorScheme.background,
+                rectColor = MaterialTheme.colorScheme.primaryContainer,
+                autoZoom = true,
+            )
         )
     }
 
@@ -97,15 +108,21 @@ fun CustomTopBar(state: CropState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = { state.done(accept = false) }) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary
+                )
         }
         IconButton(onClick = { state.done(accept = true) }, enabled = !state.accepted) {
-            Icon(Icons.Default.Done, contentDescription = null)
+            Icon(Icons.Default.Done,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }

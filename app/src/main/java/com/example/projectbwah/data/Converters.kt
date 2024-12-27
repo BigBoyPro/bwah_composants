@@ -4,7 +4,21 @@ import androidx.room.TypeConverter
 import java.time.LocalDate
 import java.time.LocalTime
 
+
+
+fun DefaultActivity.toPetActivity(petId: Int): PetActivity {
+    return PetActivity(
+        name = this.name,
+        petId = petId,
+        scheduleType = this.scheduleType,
+        scheduleTime = this.scheduleTime,
+        scheduleDayOfWeekOrMonth = this.scheduleDayOfWeekOrMonth,
+        scheduleDate = if (this.scheduleType == ScheduleType.ONCE) LocalDate.now() else null
+    )
+}
+
 class Converters {
+
 
     @TypeConverter
     fun fromScheduleType(value: ScheduleType?): String? {

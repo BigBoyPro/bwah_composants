@@ -78,8 +78,13 @@ interface PetsDao {
     fun getDefaultActivitiesBySpecies(speciesId: Int): Flow<List<DefaultActivity>>
 
     @Query("SELECT * FROM default_activities WHERE isDefault = 1")
-    fun getDefaultActivities(): Flow<List<DefaultActivity>>
+    fun getDefaultDefaultActivities(): Flow<List<DefaultActivity>>
 
+    @Query("SELECT * FROM default_activities WHERE isDefault = 1")
+    fun getDefaultDefaultActivitiesList(): List<DefaultActivity>
+
+    @Query("SELECT * FROM default_activities WHERE speciesId = :speciesId")
+    fun getDefaultActivitiesListBySpeciesId(speciesId: Int): List<DefaultActivity>
 
     /*
     pet activities queries
@@ -101,10 +106,10 @@ interface PetsDao {
     fun getPetActivityById(petActivityId: Int): Flow<PetActivity>
 
     @Query("SELECT * FROM pet_activities WHERE petId = :petId")
-    fun getPetActivitiesByPet(petId: Int): Flow<List<PetActivity>>
+    fun getPetActivitiesByPetId(petId: Int): Flow<List<PetActivity>>
 
     @Query("DELETE FROM pet_activities WHERE id = :activityId")
-    fun deletePetActivityById(activityId: Int)
+    fun deletePetActivityById(activityId: Int): Int
 
     @Query("DELETE FROM default_activities WHERE id = :activityId")
     fun deleteDefaultActivityById(activityId: Int)

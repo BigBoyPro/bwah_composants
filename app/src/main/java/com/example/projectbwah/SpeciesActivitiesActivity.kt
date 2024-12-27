@@ -1,11 +1,9 @@
 package com.example.projectbwah
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,23 +23,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,16 +42,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectbwah.data.DefaultActivity
-import com.example.projectbwah.data.ScheduleType
 import com.example.projectbwah.ui.theme.ProjectBWAHTheme
-import com.example.projectbwah.viewmodel.SpeciesActivityViewModel
+import com.example.projectbwah.viewmodel.SpeciesActivitiesViewModel
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalTime
-import java.time.ZoneId
 
 
-class SpeciesActivityActivity : ComponentActivity() {
+class SpeciesActivitiesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val speciesId = intent.getIntExtra("speciesId", -1).takeIf { it != -1 }
@@ -74,17 +56,17 @@ class SpeciesActivityActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ProjectBWAHTheme {
-                SpeciesActivityScreen(speciesId, speciesName)
+                SpeciesActivitiesScreen(speciesId, speciesName)
             }
         }
     }
 }
 
 @Composable
-fun SpeciesActivityScreen(
+fun SpeciesActivitiesScreen(
     speciesId: Int?,
     speciesName: String?,
-    viewModel: SpeciesActivityViewModel = viewModel()
+    viewModel: SpeciesActivitiesViewModel = viewModel()
 ) {
     val speciesActivities by viewModel.speciesActivities.collectAsState(emptyList())
     val editingActivity by viewModel.editingActivity.collectAsState()
@@ -96,6 +78,51 @@ fun SpeciesActivityScreen(
     viewModel.getSpeciesActivities(speciesId)
 
 
+    if (showAddActivity) {
+        ActivityDialog(
+            onDismissRequest = { showAddActivity = false },
+            activityId = null,
+            speciesId = speciesId,
+            petId = null,
+            isPetActivity = false,
+        )
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Confirm Deletion") },
+            text = { Text("Are you sure you want to delete the selected activities?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        selectedActivities.forEach { activity ->
+                            viewModel.deleteActivity(activity)
+                        }
+                        selectedActivities.clear()
+                        showDeleteConfirmation = false
+                    }
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (editingActivity != null) {
+        ActivityDialog(
+            onDismissRequest = { viewModel.onEditActivity(null) }, // Clear editing state on dismiss
+            activityId = editingActivity?.id,
+            speciesId = speciesId,
+            petId = null,
+            isPetActivity = false
+        )
+    }
 
 
     Scaffold(
@@ -158,51 +185,6 @@ fun SpeciesActivityScreen(
             }
         }
 
-        if (showAddActivity) {
-            ActivityDialog(
-                onDismissRequest = { showAddActivity = false },
-                activityId = null,
-                speciesId = speciesId,
-                petId = null,
-                isPetActivity = false,
-            )
-        }
-
-        if (showDeleteConfirmation) {
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirmation = false },
-                title = { Text("Confirm Deletion") },
-                text = { Text("Are you sure you want to delete the selected activities?") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        coroutineScope.launch {
-                            selectedActivities.forEach { activity ->
-                                viewModel.deleteActivity(activity)
-                            }
-                            selectedActivities.clear()
-                            showDeleteConfirmation = false
-                        }
-                    }) {
-                        Text("Delete")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteConfirmation = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        if (editingActivity != null) {
-            ActivityDialog(
-                onDismissRequest = { viewModel.onEditActivity(null) }, // Clear editing state on dismiss
-                activityId = editingActivity?.id,
-                speciesId = speciesId,
-                petId = null,
-                isPetActivity = false
-            )
-        }
     }
 }
 
