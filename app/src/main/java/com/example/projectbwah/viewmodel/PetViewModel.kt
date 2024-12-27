@@ -303,7 +303,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteActivity(activity: PetActivity) {
         viewModelScope.launch {
-            dao.deletePetActivityById(activity.id)
+            withContext(Dispatchers.IO) {
+                dao.deletePetActivityById(activity.id)
+            }
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
@@ -30,22 +31,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
-import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.PetActivity
 import com.example.projectbwah.utils.ConfirmDismissDialog
 import com.example.projectbwah.utils.CustomPopupDropdownMenu
 import com.example.projectbwah.utils.DatePickerTextFieldWithError
 import com.example.projectbwah.utils.ImageCropper
 import com.example.projectbwah.utils.TextFieldWithError
-import com.example.projectbwah.utils.goToNextPage
 import com.example.projectbwah.utils.saveBitmapToUri
 import kotlinx.coroutines.launch
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -60,7 +56,6 @@ fun PetDialog(
     parameterPetId: Int?,
     onDismissRequest: () -> Unit,
 ) {
-    var dialogOffset by remember { mutableStateOf(Offset.Zero) }
     val pagerState = rememberPagerState()
     val petId by rememberSaveable { mutableStateOf(parameterPetId) }
 
@@ -73,7 +68,6 @@ fun PetDialog(
 
         val newPet by rememberSaveable { mutableStateOf(petId == null) }
         var editMode by rememberSaveable { mutableStateOf(petId == null) }
-        val speciesList by viewModel.speciesList.collectAsState() // Observe speciesList
 
         val pet by viewModel.pet
         var finished by viewModel.finished
@@ -113,53 +107,58 @@ fun PetDialog(
 
 
 
-        val title = if (newPet) "Discard Changes" else "Revert Changes"
-        val text =
-            if (newPet) "Are you sure you want to discard the changes and go back?" else "Are you sure you want to revert the changes and stop editing?"
-        val confirm = if (newPet) "Discard" else "Revert"
-        val dismiss = "Cancel"
-
-        if (showRevertChangesDialog) {
-            ConfirmDismissDialog(
-                title = title,
-                text = text,
-                confirm = confirm,
-                dismiss = dismiss,
-                onConfirm = {
-                    viewModel.clearStates()
-                    if (newPet) {
-                        onDismissRequest()
-                    } else {
-                        editMode = false
-                    }
-                    showRevertChangesDialog = false
-                },
-                onDismiss = { showRevertChangesDialog = false }
-            )
-        }
-
-        if (showDeleteConfirmationDialog && !newPet) {
-            ConfirmDismissDialog(
-                title = "Delete Pet",
-                text = "Are you sure you want to delete this pet?",
-                confirm = "Delete",
-                dismiss = "Cancel",
-                onConfirm = {
-                    onDismissRequest()
-                    showDeleteConfirmationDialog = false
-                    viewModel.deletePet()
-                },
-                onDismiss = { showDeleteConfirmationDialog = false }
-            )
-        }
-
-
-
-        Popup(
+        Dialog(
             onDismissRequest = newOnDismissRequest,
-            properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
-            alignment = Alignment.Center
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
         ) {
+
+            val title = if (newPet) "Discard Changes" else "Revert Changes"
+            val text =
+                if (newPet) "Are you sure you want to discard the changes and go back?" else "Are you sure you want to revert the changes and stop editing?"
+            val confirm = if (newPet) "Discard" else "Revert"
+            val dismiss = "Cancel"
+
+
+            if (showRevertChangesDialog) {
+                ConfirmDismissDialog(
+                    title = title,
+                    text = text,
+                    confirm = confirm,
+                    dismiss = dismiss,
+                    onConfirm = {
+                        viewModel.clearStates()
+                        if (newPet) {
+                            onDismissRequest()
+                        } else {
+                            editMode = false
+                        }
+                        showRevertChangesDialog = false
+                    },
+                    onDismiss = { showRevertChangesDialog = false }
+                )
+            }
+
+            if (showDeleteConfirmationDialog) {
+                ConfirmDismissDialog(
+                    title = "Delete Pet",
+                    text = "Are you sure you want to delete this pet?",
+                    confirm = "Delete",
+                    dismiss = "Cancel",
+                    onConfirm = {
+                        showDeleteConfirmationDialog = false
+                        viewModel.deletePet()
+                        onDismissRequest()
+                    },
+                    onDismiss = { showDeleteConfirmationDialog = false }
+                )
+            }
+
+
+
             Surface(
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.background,
@@ -173,21 +172,24 @@ fun PetDialog(
             ) {
                 Scaffold(
                     modifier = Modifier
-                        .onGloballyPositioned { coordinates ->
-                            val position = coordinates.positionOnScreen()
-                            dialogOffset = position
-                        }.fillMaxSize()
-                        ,
+                        .fillMaxSize(),
                     topBar = {
                         CenterAlignedTopAppBar(
                             title = {
                                 Box(modifier = Modifier.fillMaxWidth()) {
 
-                                    IconButton(onClick = newOnDismissRequest, modifier = Modifier.align(Alignment.CenterStart)) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                                    IconButton(
+                                        onClick = newOnDismissRequest,
+                                        modifier = Modifier.align(Alignment.CenterStart)
+                                    ) {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back"
+                                        )
+                                    }
 
                                     Text(
-                                        if(pagerState.currentPage == 0) if (newPet) "Add Pet" else if (editMode) "Edit Pet" else viewModel.name.value else (viewModel.name.value.ifBlank { "Pet" }) + " Activities",
+                                        if (pagerState.currentPage == 0) if (newPet) "Add Pet" else if (editMode) "Edit Pet" else viewModel.name.value else (viewModel.name.value.ifBlank { "Pet" }) + " Activities",
                                         modifier = Modifier.align(Alignment.Center)
                                     )
 
@@ -204,20 +206,21 @@ fun PetDialog(
                                             modifier = Modifier.align(Alignment.CenterEnd),
                                             horizontalArrangement = Arrangement.spacedBy(0.dp)
                                         ) {
-
-                                            if (!editMode) {
-                                                IconButton(onClick = { editMode = true }) {
-                                                    Icon(
-                                                        Icons.Filled.Edit,
-                                                        contentDescription = "Edit"
-                                                    )
-                                                }
-                                            } else {
-                                                IconButton(onClick = { newOnDismissRequest() }) {
-                                                    Icon(
-                                                        Icons.Filled.Clear,
-                                                        contentDescription = "Cancel"
-                                                    )
+                                            if (pagerState.currentPage == 0) {
+                                                if (!editMode) {
+                                                    IconButton(onClick = { editMode = true }) {
+                                                        Icon(
+                                                            Icons.Filled.Edit,
+                                                            contentDescription = "Edit"
+                                                        )
+                                                    }
+                                                } else {
+                                                    IconButton(onClick = { newOnDismissRequest() }) {
+                                                        Icon(
+                                                            Icons.Filled.Clear,
+                                                            contentDescription = "Cancel"
+                                                        )
+                                                    }
                                                 }
                                             }
 
@@ -256,6 +259,7 @@ fun PetDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
+
                         HorizontalPager(
                             count = 2, // Number of pages
                             state = pagerState,
@@ -268,18 +272,15 @@ fun PetDialog(
                                 0 -> {
                                     PetScreen(
                                         editMode = editMode,
-                                        dialogOffset = dialogOffset,
                                         viewModel = viewModel
                                     )
                                 }
 
                                 1 -> {
                                     val idPet = petId ?: viewModel.petId.value
-                                    if(idPet != null) {
+                                    if (idPet != null) {
                                         PetActivitiesScreen(
                                             petId = idPet,
-                                            speciesId = speciesList.find { it.name == viewModel.selectedSpeciesName.value }?.id,
-                                            speciesName = viewModel.selectedSpeciesName.value,
                                             viewModel = viewModel
                                         )
                                     }
@@ -308,7 +309,6 @@ fun PetDialog(
 @Composable
 private fun PetScreen(
     editMode: Boolean,
-    dialogOffset: Offset,
     viewModel: PetViewModel,
 ) {
 
@@ -368,9 +368,8 @@ private fun PetScreen(
             placeholder = "Select Species",
             itemsList = speciesList.map { it.name },
             selectedItem = selectedSpeciesName,
-            onItemSelected = { _, item -> selectedSpeciesName = item},
+            onItemSelected = { _, item -> selectedSpeciesName = item },
             isEditable = editMode,
-            dialogOffset = dialogOffset
         )
 
         TextFieldWithError(
@@ -552,8 +551,6 @@ fun ActivityItem(
 @Composable
 fun PetActivitiesScreen(
     petId: Int,
-    speciesId: Int?,
-    speciesName: String?,
     viewModel: PetViewModel = viewModel()
 ) {
     val petActivities by viewModel.petActivities.collectAsState(emptyList())
@@ -567,14 +564,6 @@ fun PetActivitiesScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        Text(
-            text = "$speciesName Activities",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(16.dp)
-        )
-
-
-
 
         LazyColumn(
             contentPadding = PaddingValues(8.dp)
@@ -596,21 +585,22 @@ fun PetActivitiesScreen(
                 )
             }
         }
-        Button(onClick = { showAddActivity = true }) {
-            Text("Add Activity")
-        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            if (selectedActivities.isNotEmpty()) {
 
-        if (selectedActivities.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
                 IconButton(onClick = { showDeleteConfirmation = true }) {
                     Icon(Icons.Filled.Delete, contentDescription = "Delete")
                 }
             }
+            IconButton(onClick = { showAddActivity = true }) {
+                Icon(Icons.Filled.Add, contentDescription = "Add Activity")
+            }
+
         }
     }
 
@@ -656,7 +646,8 @@ fun PetActivitiesScreen(
             activityId = editingActivity?.id,
             speciesId = null,
             petId = petId,
-            isPetActivity = true
+            isPetActivity = true,
+            editModeByDefault = true
         )
     }
 }

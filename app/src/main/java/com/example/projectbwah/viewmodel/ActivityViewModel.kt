@@ -1,7 +1,6 @@
 package com.example.projectbwah.viewmodel
 
 import android.app.Application
-import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,8 +9,10 @@ import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.PetActivity
 import com.example.projectbwah.data.PetsDB
 import com.example.projectbwah.data.ScheduleType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -122,6 +123,26 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
         }
 
         when (scheduleType.value) {
+            ScheduleType.ONCE -> {
+                val scheduleDate = scheduleDate.value
+                if (isPetActivity.value ) {
+                    if(scheduleDate == null) {
+                        scheduleDateError.value += "Date is required for once schedule\n"
+                        hasErrors = true
+                    }else if(scheduleDate < LocalDate.now()){
+                        scheduleDateError.value += "Date cannot be in the past\n"
+                        hasErrors = true
+                    }
+                }
+                val scheduleTime = scheduleTime.value
+                if (scheduleTime == null) {
+                    scheduleDateError.value += "Time is required for once schedule\n"
+                    hasErrors = true
+                }else if(isPetActivity.value  && scheduleTime < LocalTime.now() && scheduleDate == LocalDate.now()){
+                    scheduleDateError.value += "Time cannot be in the past\n"
+                    hasErrors = true
+                }
+            }
             ScheduleType.DAILY -> {
                 if (scheduleTime.value == null) {
                     scheduleTypeError.value += "Time is required for daily schedule\n"
@@ -136,17 +157,6 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
                 }
                 if (scheduleTime.value == null) {
                     scheduleTypeError.value += "Time is required for weekly schedule\n"
-                    hasErrors = true
-                }
-            }
-
-            ScheduleType.ONCE -> {
-                if (isPetActivity.value && scheduleDate.value == null) {
-                    scheduleDateError.value += "Date is required for once schedule\n"
-                    hasErrors = true
-                }
-                if (scheduleTime.value == null) {
-                    scheduleDateError.value += "Time is required for once schedule\n"
                     hasErrors = true
                 }
             }
@@ -168,7 +178,7 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-    fun addOrUpdateActivity(context: Context = getApplication<Application>().applicationContext) {
+    fun addOrUpdateActivity() {
         if (clearAndCheckErrors()) {
             return
         }
@@ -254,12 +264,13 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
 
     fun deleteActivity() {
         viewModelScope.launch {
-            if (isPetActivity.value) {
-                dao.deletePetActivityById(activityId.value!!)
-            } else {
-                dao.deleteDefaultActivityById(activityId.value!!)
+            withContext(Dispatchers.IO) {
+                if (isPetActivity.value) {
+                    dao.deletePetActivityById(activityId.value!!)
+                } else {
+                    dao.deleteDefaultActivityById(activityId.value!!)
+                }
             }
-            finished.value = true
         }
     }
 

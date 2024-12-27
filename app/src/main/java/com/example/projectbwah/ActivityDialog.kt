@@ -22,12 +22,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionOnScreen
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.projectbwah.data.ScheduleType
 import com.example.projectbwah.utils.ConfirmDismissDialog
 import com.example.projectbwah.utils.CustomPopupDropdownMenu
@@ -44,6 +40,7 @@ fun ActivityDialog(
     activityId: Int?,
     speciesId: Int?,
     petId: Int?,
+    editModeByDefault: Boolean = false,
     isPetActivity: Boolean,
     onDismissRequest: () -> Unit,
     viewModel: ActivityViewModel = viewModel(
@@ -55,7 +52,7 @@ fun ActivityDialog(
     var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false) }
 
     val newActivity by rememberSaveable { mutableStateOf(activityId == null) }
-    var editMode by rememberSaveable { mutableStateOf(newActivity) }
+    var editMode by rememberSaveable { mutableStateOf(newActivity || editModeByDefault) }
 
     val activity by viewModel.activity
     var finished by viewModel.finished
@@ -66,7 +63,7 @@ fun ActivityDialog(
                 showRevertChangesDialog = true
             } else {
                 viewModel.clearStates()
-                if (newActivity) onDismissRequest()
+                if (newActivity || editModeByDefault) onDismissRequest()
                 else editMode = false
             }
         } else {
@@ -78,7 +75,11 @@ fun ActivityDialog(
         if (newActivity) {
             viewModel.clearStates()
             onDismissRequest()
-        } else editMode = false
+        } else if (editModeByDefault) {
+            onDismissRequest()
+        } else {
+            editMode = false
+        }
 
         finished = false
     }
@@ -88,80 +89,74 @@ fun ActivityDialog(
         viewModel.loadActivity(activityId)
     }
 
-
-    val title = if (newActivity) "Discard Changes" else "Revert Changes"
-    val text =
-        if (newActivity) "Are you sure you want to discard the changes and go back?" else "Are you sure you want to revert the changes and stop editing?"
-    val confirm = if (newActivity) "Discard" else "Revert"
-    val dismiss = "Cancel"
-
-
-    if (showRevertChangesDialog) {
-        ConfirmDismissDialog(
-            title = title,
-            text = text,
-            confirm = confirm,
-            dismiss = dismiss,
-            onConfirm = {
-                viewModel.clearStates()
-                if (newActivity) {
-                    onDismissRequest()
-                } else {
-                    editMode = false
-                }
-                showRevertChangesDialog = false
-            },
-            onDismiss = { showRevertChangesDialog = false }
-        )
-    }
-
-    if (showDeleteConfirmationDialog) {
-        ConfirmDismissDialog(
-            title = "Delete Activity",
-            text = "Are you sure you want to delete this activity?",
-            confirm = "Delete",
-            dismiss = "Cancel",
-            onConfirm = {
-                if (!newActivity) {
-                    onDismissRequest()
-                    showDeleteConfirmationDialog = false
-                    viewModel.deleteActivity()
-                }
-            },
-            onDismiss = { showDeleteConfirmationDialog = false }
-        )
-    }
-
-
-    var dialogOffset by remember { mutableStateOf(Offset.Zero) }
-
-
-
-    Popup(
+    Dialog(
         onDismissRequest = newOnDismissRequest,
-        properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
-        alignment = Alignment.Center
+        properties = DialogProperties(
+            dismissOnClickOutside = true,
+            dismissOnBackPress = true,
+            usePlatformDefaultWidth = false,
+        ),
     ) {
+
+        val title = if (newActivity) "Discard Changes" else "Revert Changes"
+        val text =
+            if (newActivity) "Are you sure you want to discard the changes and go back?" else "Are you sure you want to revert the changes and stop editing?"
+        val confirm = if (newActivity) "Discard" else "Revert"
+        val dismiss = "Cancel"
+
+
+        if (showRevertChangesDialog) {
+            ConfirmDismissDialog(
+                title = title,
+                text = text,
+                confirm = confirm,
+                dismiss = dismiss,
+                onConfirm = {
+                    viewModel.clearStates()
+                    if (newActivity || editModeByDefault) {
+                        onDismissRequest()
+                    } else {
+                        editMode = false
+                    }
+                    showRevertChangesDialog = false
+                },
+                onDismiss = { showRevertChangesDialog = false }
+            )
+        }
+
+        if (showDeleteConfirmationDialog) {
+            ConfirmDismissDialog(
+                title = "Delete Activity",
+                text = "Are you sure you want to delete this activity?",
+                confirm = "Delete",
+                dismiss = "Cancel",
+                onConfirm = {
+                    if (!newActivity) {
+                        onDismissRequest()
+                        showDeleteConfirmationDialog = false
+                        viewModel.deleteActivity()
+                    }
+                },
+                onDismiss = { showDeleteConfirmationDialog = false }
+            )
+        }
+
         Surface(
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.background,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
             modifier = Modifier
+                .fillMaxSize(0.9f)
         ) {
-
-
             Scaffold(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { coordinates ->
-                        val position = coordinates.positionOnScreen()
-                        dialogOffset = position
-                    },
+                    .fillMaxSize(),
                 topBar = {
                     CenterAlignedTopAppBar(
                         title = {
                             Box(
                                 modifier = Modifier
+                                    .fillMaxWidth()
                             ) {
 
                                 IconButton(
@@ -190,16 +185,21 @@ fun ActivityDialog(
                                         modifier = Modifier.align(Alignment.CenterEnd),
                                         horizontalArrangement = Arrangement.spacedBy(0.dp)
                                     ) {
-                                        if (!editMode) {
-                                            IconButton(onClick = { editMode = true }) {
-                                                Icon(Icons.Filled.Edit, contentDescription = "Edit")
-                                            }
-                                        } else {
-                                            IconButton(onClick = { newOnDismissRequest() }) {
-                                                Icon(
-                                                    Icons.Filled.Clear,
-                                                    contentDescription = "Cancel"
-                                                )
+                                        if(!editModeByDefault) {
+                                            if (!editMode) {
+                                                IconButton(onClick = { editMode = true }) {
+                                                    Icon(
+                                                        Icons.Filled.Edit,
+                                                        contentDescription = "Edit"
+                                                    )
+                                                }
+                                            } else {
+                                                IconButton(onClick = { newOnDismissRequest() }) {
+                                                    Icon(
+                                                        Icons.Filled.Clear,
+                                                        contentDescription = "Cancel"
+                                                    )
+                                                }
                                             }
                                         }
                                         IconButton(onClick = {
@@ -254,8 +254,7 @@ fun ActivityDialog(
 private fun ActivityScreen(
     isPetActivity: Boolean,
     editMode: Boolean,
-    viewModel: ActivityViewModel ,
-    dialogOffset: Offset = Offset.Zero
+    viewModel: ActivityViewModel,
 ) {
 
     var name by viewModel.name
@@ -269,12 +268,10 @@ private fun ActivityScreen(
     val scheduleDateError by viewModel.scheduleDateError
 
     val scheduleTypes = viewModel.scheduleTypes
-
-
-
-
     Column(
         modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp, 5.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -309,7 +306,6 @@ private fun ActivityScreen(
             },
             label = "Schedule Type",
             placeholder = "Select a Schedule Type",
-            dialogOffset = dialogOffset,
             isEditable = editMode
         )
 
@@ -349,7 +345,6 @@ private fun ActivityScreen(
                     },
                     label = "Day of Week",
                     placeholder = "Select a Day",
-                    dialogOffset = dialogOffset,
                     error = scheduleTypeError,
                     isEditable = editMode
                 )
@@ -367,7 +362,6 @@ private fun ActivityScreen(
                     },
                     label = "Day of Month",
                     placeholder = "Select a Day",
-                    dialogOffset = dialogOffset,
                     error = scheduleTypeError,
                     isEditable = editMode
                 )
