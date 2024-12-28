@@ -44,7 +44,6 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
     var scheduleDateError = mutableStateOf("")
 
 
-    val isDefault = mutableStateOf(false)
 
 
     fun loadActivity(activityId: Int?) {
@@ -84,7 +83,6 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
         scheduleTime.value = loadedActivity?.scheduleTime
         scheduleDayOfWeekOrMonth.value = loadedActivity?.scheduleDayOfWeekOrMonth
         scheduleDate.value = (loadedActivity as? PetActivity)?.scheduleDate
-        isDefault.value = (loadedActivity as? DefaultActivity)?.isDefault ?: false
 
     }
 
@@ -100,8 +98,7 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
                     scheduleType.value != loadedActivity.scheduleType ||
                     scheduleTime.value != loadedActivity.scheduleTime ||
                     scheduleDayOfWeekOrMonth.value != loadedActivity.scheduleDayOfWeekOrMonth ||
-                    (loadedActivity is PetActivity && scheduleDate.value != loadedActivity.scheduleDate) ||
-                    (loadedActivity is DefaultActivity && isDefault.value != loadedActivity.isDefault)
+                    (loadedActivity is PetActivity && scheduleDate.value != loadedActivity.scheduleDate)
         }
     }
 
@@ -214,7 +211,7 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
                     id = activityId,
                     name = name.value,
                     speciesId = speciesId,
-                    isDefault = isDefault.value,
+                    isDefault = speciesId == null,
                     scheduleType = scheduleType.value,
                     scheduleTime = scheduleTime.value,
                     scheduleDayOfWeekOrMonth = scheduleDayOfWeekOrMonth.value
@@ -223,7 +220,7 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
                 DefaultActivity(
                     name = name.value,
                     speciesId = speciesId,
-                    isDefault = isDefault.value,
+                    isDefault = speciesId == null,
                     scheduleType = scheduleType.value,
                     scheduleTime = scheduleTime.value,
                     scheduleDayOfWeekOrMonth = scheduleDayOfWeekOrMonth.value

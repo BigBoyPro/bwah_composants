@@ -140,7 +140,7 @@ fun SettingsScreen(
                             Text("Default ")
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "added regardless of species",
+                                text = "For All Pets",
                                 color = LocalContentColor.current.copy(alpha = 0.4f)
                             )
                         }

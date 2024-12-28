@@ -4,6 +4,7 @@ import android.graphics.BlurMaskFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -14,6 +15,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +29,19 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,6 +73,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.projectbwah.PetDialog
 import com.example.projectbwah.data.Pet
 import com.example.projectbwah.viewmodel.MainViewModel
+import com.google.android.gms.maps.model.Circle
 import java.io.File
 
 
@@ -111,7 +121,16 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
     var showDeleteConfirmationDialog by viewModel.showDeleteConfirmationDialog
     var showPetDialog by rememberSaveable { mutableStateOf(false) }
     var selectedPetId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
 
+    if (selectionMode) {
+        BackHandler {
+            selectedPets.clear()
+            selectionMode = false
+        }
+    }
+
+    selectionMode = !selectedPets.isEmpty()
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 150.dp),
@@ -123,31 +142,52 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                 modifier = Modifier
                     .size(150.dp)
                     .padding(8.dp)
-                    .shadow(elevation = 10.dp,
+                    .shadow(
+                        elevation = 10.dp,
                         shape = MaterialTheme.shapes.medium,
                         spotColor = Color.Gray,
                     )
                     .combinedClickable(
                         onClick = {
-                            selectedPetId = pet.idPet
-                            showPetDialog = true
+                            if (selectionMode) {
+                                if (isSelected) {
+                                    selectedPets.remove(pet)
+                                    if (selectedPets.isEmpty()) {
+                                        selectionMode = false
+                                    }
+                                } else {
+                                    selectedPets.add(pet)
+                                }
+                            } else {
+                                selectedPetId = pet.idPet
+                                showPetDialog = true
+                            }
                         },
                         onLongClick = {
-                            if (isSelected) {
-                                selectedPets.remove(pet)
-                            } else {
+                            if (!selectionMode) {
                                 selectedPets.add(pet)
+                                selectionMode = true
+                            } else {
+                                if (isSelected) {
+                                    selectedPets.remove(pet)
+                                    if (selectedPets.isEmpty()) {
+                                        selectionMode = false
+                                    }
+                                } else {
+                                    selectedPets.add(pet)
+                                }
                             }
                         }
                     ),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) Color.Red else MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = if (!isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer
                 )
             ) {
 
                 Box(
                     modifier = Modifier.fillMaxSize(),
                 ) {
+
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -176,7 +216,8 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                                 contentDescription = null,
 
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier
+                                    .fillMaxSize()
                                     .graphicsLayer {
 
                                         // Apply inner shadow effect
@@ -201,8 +242,22 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                         modifier = Modifier
                             .padding(bottom = 4.dp)
                             .align(Alignment.BottomCenter),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = if (!isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
                     )
+                    if(selectionMode){
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = null,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp),
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            uncheckedColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
+                            checkmarkColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    )
+                    }
                 }
 
             }
@@ -214,7 +269,8 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                     .height(165.dp)
                     .padding(8.dp)
                     .padding(bottom = 15.dp)
-                    .shadow(elevation = 10.dp,
+                    .shadow(
+                        elevation = 10.dp,
                         shape = MaterialTheme.shapes.medium,
                         spotColor = Color.Gray,
                     )
@@ -222,7 +278,7 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
                         selectedPetId = null
                         showPetDialog = true
                     },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -243,19 +299,36 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
         PetDialog(parameterPetId = selectedPetId, onDismissRequest = { showPetDialog = false })
     }
 
-    // Delete button
-    if (selectedPets.isNotEmpty()) {
-        Button(
-            modifier = Modifier.padding(16.dp),
-            onClick = { showDeleteConfirmationDialog = true },
-            colors = ButtonColors(
-                containerColor = Color.Red,
-                contentColor = Color.White,
-                disabledContainerColor = Color.Red,
-                disabledContentColor = Color.White
-            )
+    if (selectionMode) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Delete Selected")
+            // Delete button
+            FilledIconButton(
+                modifier = Modifier
+                    .padding(8.dp),
+                onClick = { showDeleteConfirmationDialog = true },
+                colors = IconButtonDefaults.filledIconButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Icon(Icons.Filled.Delete, contentDescription = "Delete")
+            }
+            // Cancel Selection button
+            FilledIconButton(
+                modifier = Modifier.padding(8.dp),
+                onClick = { selectedPets.clear(); selectionMode = false },
+                colors = IconButtonDefaults.filledIconButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = "Cancel")
+            }
         }
     }
 

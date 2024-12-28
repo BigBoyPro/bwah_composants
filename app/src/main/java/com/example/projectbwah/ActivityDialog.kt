@@ -72,6 +72,7 @@ fun ActivityDialog(
         }
     }
     if (finished) {
+        finished = false
         if (newActivity) {
             viewModel.clearStates()
             onDismissRequest()
@@ -81,7 +82,6 @@ fun ActivityDialog(
             editMode = false
         }
 
-        finished = false
     }
 
     viewModel.initialize(isPetActivity, petId, speciesId)
@@ -173,35 +173,37 @@ fun ActivityDialog(
                                     if (newActivity) "Add Activity" else if (!editMode) viewModel.name.value else "Edit Activity",
                                     modifier = Modifier.align(Alignment.Center)
                                 )
-                                if (newActivity) {
-                                    IconButton(
-                                        onClick = { viewModel.clearStates() },
-                                        modifier = Modifier.align(Alignment.CenterEnd)
-                                    ) {
-                                        Icon(Icons.Filled.Refresh, contentDescription = "Clear")
+
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                                ) {
+                                    if ((newActivity || editModeByDefault) && viewModel.hasChanges()) {
+                                        IconButton(
+                                            onClick = { newOnDismissRequest() },
+                                        ) {
+                                            Icon(Icons.Filled.Refresh, contentDescription = "Clear")
+                                        }
                                     }
-                                } else {
-                                    Row(
-                                        modifier = Modifier.align(Alignment.CenterEnd),
-                                        horizontalArrangement = Arrangement.spacedBy(0.dp)
-                                    ) {
-                                        if(!editModeByDefault) {
-                                            if (!editMode) {
-                                                IconButton(onClick = { editMode = true }) {
-                                                    Icon(
-                                                        Icons.Filled.Edit,
-                                                        contentDescription = "Edit"
-                                                    )
-                                                }
-                                            } else {
-                                                IconButton(onClick = { newOnDismissRequest() }) {
-                                                    Icon(
-                                                        Icons.Filled.Clear,
-                                                        contentDescription = "Cancel"
-                                                    )
-                                                }
+
+                                    if (!editModeByDefault) {
+                                        if (!editMode) {
+                                            IconButton(onClick = { editMode = true }) {
+                                                Icon(
+                                                    Icons.Filled.Edit,
+                                                    contentDescription = "Edit"
+                                                )
+                                            }
+                                        } else {
+                                            IconButton(onClick = { newOnDismissRequest() }) {
+                                                Icon(
+                                                    Icons.Filled.Clear,
+                                                    contentDescription = "Cancel"
+                                                )
                                             }
                                         }
+                                    }
+                                    if (!newActivity) {
                                         IconButton(onClick = {
                                             showDeleteConfirmationDialog = true
                                         }) {
@@ -212,10 +214,9 @@ fun ActivityDialog(
                                             )
                                         }
                                     }
-
                                 }
-                            }
 
+                            }
                         }
                     )
                 },
@@ -263,7 +264,6 @@ private fun ActivityScreen(
     val scheduleTypeError by viewModel.scheduleTypeError
     var scheduleTime by viewModel.scheduleTime
     var scheduleDayOfWeekOrMonth by viewModel.scheduleDayOfWeekOrMonth
-    var isDefault by viewModel.isDefault
     var scheduleDate by viewModel.scheduleDate
     val scheduleDateError by viewModel.scheduleDateError
 
@@ -282,19 +282,9 @@ private fun ActivityScreen(
             value = name,
             onValueChange = { name = it },
             isEditable = editMode,
-            error = nameError
+            error = nameError,
+            modifier = Modifier.fillMaxWidth()
         )
-
-        if (!isPetActivity) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Is Default")
-                Checkbox(
-                    checked = isDefault,
-                    onCheckedChange = { isDefault = it },
-                    enabled = editMode
-                )
-            }
-        }
 
         // Schedule Type Selection
 
@@ -306,7 +296,8 @@ private fun ActivityScreen(
             },
             label = "Schedule Type",
             placeholder = "Select a Schedule Type",
-            isEditable = editMode
+            isEditable = editMode,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // Conditional UI Elements based on Schedule Type
@@ -345,8 +336,9 @@ private fun ActivityScreen(
                     },
                     label = "Day of Week",
                     placeholder = "Select a Day",
+                    isEditable = editMode,
                     error = scheduleTypeError,
-                    isEditable = editMode
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -362,8 +354,9 @@ private fun ActivityScreen(
                     },
                     label = "Day of Month",
                     placeholder = "Select a Day",
+                    isEditable = editMode,
                     error = scheduleTypeError,
-                    isEditable = editMode
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

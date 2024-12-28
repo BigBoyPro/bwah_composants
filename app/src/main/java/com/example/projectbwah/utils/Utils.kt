@@ -133,8 +133,9 @@ fun TextFieldWithError(
     value: String,
     onValueChange: (String) -> Unit,
     isEditable: Boolean,
+    modifier: Modifier = Modifier,
     isNumber: Boolean = false,
-    error: String = ""
+    error: String = "",
 ) {
 
     if (isEditable || value.isNotBlank()) {
@@ -142,7 +143,7 @@ fun TextFieldWithError(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier,
             keyboardOptions = KeyboardOptions(keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text),
             readOnly = !isEditable
         )
@@ -150,6 +151,7 @@ fun TextFieldWithError(
             Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
+                modifier = modifier
             )
         }
     }
@@ -338,12 +340,13 @@ fun CustomPopupDropdownMenu(
     onItemSelected: (Int, String) -> Unit,
     label: String,
     placeholder: String,
+    modifier: Modifier = Modifier,
     isEditable: Boolean = true,
     error: String = ""
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    BoxWithConstraints(contentAlignment = Alignment.TopStart) {
+    BoxWithConstraints(modifier = modifier) {
         val textFieldWidth = constraints.maxWidth
         val density = LocalDensity.current
 
@@ -355,8 +358,7 @@ fun CustomPopupDropdownMenu(
             trailingIcon = {
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             },
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
                 .clickable { if (isEditable) expanded = true },
             enabled = false,
             colors = OutlinedTextFieldDefaults.colors(
@@ -394,6 +396,7 @@ fun CustomPopupDropdownMenu(
         Text(
             text = error,
             color = MaterialTheme.colorScheme.error,
+            modifier = modifier
         )
     }
 }

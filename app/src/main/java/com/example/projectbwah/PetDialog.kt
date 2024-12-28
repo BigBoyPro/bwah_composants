@@ -1,5 +1,6 @@
 package com.example.projectbwah
 
+import MeasurementSystemManager
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -103,6 +104,7 @@ fun PetDialog(
             } else {
                 newOnDismissRequest()
             }
+            finished = false
         }
 
 
@@ -289,13 +291,16 @@ fun PetDialog(
 
 
                         }
-                        HorizontalPagerIndicator(
-                            pagerState = pagerState,
-                            modifier = Modifier
-                                .padding(8.dp),
-                            inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            activeColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
+                        if (!editMode) {
+                            HorizontalPagerIndicator(
+                                pagerState = pagerState,
+                                modifier = Modifier
+                                    .padding(8.dp),
+                                inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                activeColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+
                     }
                 }
 
@@ -319,8 +324,10 @@ private fun PetScreen(
     var description by viewModel.description
     val descriptionError by viewModel.descriptionError
     var weight by viewModel.weight
+    var weightUnit by viewModel.weightUnit
     val weightError by viewModel.weightError
     var height by viewModel.height
+    var heightUnit by viewModel.heightUnit
     val heightError by viewModel.heightError
     var birthDate by viewModel.birthDate
     val birthDateError by viewModel.birthDateError
@@ -359,17 +366,19 @@ private fun PetScreen(
             value = name,
             onValueChange = { name = it },
             isEditable = editMode,
-            error = nameError
+            error = nameError,
+            modifier = Modifier.fillMaxWidth()
         )
 
 
         CustomPopupDropdownMenu(
-            label = "Species",
-            placeholder = "Select Species",
             itemsList = speciesList.map { it.name },
             selectedItem = selectedSpeciesName,
             onItemSelected = { _, item -> selectedSpeciesName = item },
+            label = "Species",
+            placeholder = "Select Species",
             isEditable = editMode,
+            modifier = Modifier.fillMaxWidth()
         )
 
         TextFieldWithError(
@@ -377,7 +386,8 @@ private fun PetScreen(
             value = breed,
             onValueChange = { breed = it },
             isEditable = editMode,
-            error = breedError
+            error = breedError,
+            modifier = Modifier.fillMaxWidth()
         )
 
         TextFieldWithError(
@@ -385,26 +395,78 @@ private fun PetScreen(
             value = description,
             onValueChange = { description = it },
             isEditable = editMode,
-            error = descriptionError
+            error = descriptionError,
+            modifier = Modifier.fillMaxWidth()
         )
+        if (weight.isNotBlank() || editMode) {
 
-        TextFieldWithError(
-            label = "Weight",
-            value = weight,
-            onValueChange = { weight = it },
-            isEditable = editMode,
-            isNumber = true,
-            error = weightError
-        )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            )
+            {
+                TextFieldWithError(
+                    label = "Weight",
+                    value = weight,
+                    onValueChange = { weight = it },
+                    isEditable = editMode,
+                    isNumber = true,
+                    modifier = Modifier.weight(0.6f),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                CustomPopupDropdownMenu(
+                    itemsList = MeasurementSystemManager.getWeightUnits(),
+                    selectedItem = weightUnit,
+                    onItemSelected = { _, item -> weightUnit = item },
+                    label = "Unit",
+                    placeholder = "Select Unit",
+                    isEditable = editMode,
+                    modifier = Modifier.weight(0.4f)
+                )
+            }
+            if (weightError.isNotEmpty()) {
+                Text(
+                    text = weightError,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
 
-        TextFieldWithError(
-            label = "Height",
-            value = height,
-            onValueChange = { height = it },
-            isEditable = editMode,
-            isNumber = true,
-            error = heightError
-        )
+        if (height.isNotBlank() || editMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            )
+            {
+                TextFieldWithError(
+                    label = "Height",
+                    value = height,
+                    onValueChange = { height = it },
+                    isEditable = editMode,
+                    isNumber = true,
+                    modifier = Modifier.weight(0.6f),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                CustomPopupDropdownMenu(
+                    itemsList = MeasurementSystemManager.getMeasurementUnits(),
+                    selectedItem = heightUnit,
+                    onItemSelected = { _, item -> heightUnit = item },
+                    label = "Unit",
+                    placeholder = "Select Unit",
+                    isEditable = editMode,
+                    modifier = Modifier.weight(0.4f),
+                )
+
+            }
+            if (heightError.isNotEmpty()) {
+                Text(
+                    text = heightError,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
 
         DatePickerTextFieldWithError(
             label = "Birth Date",
@@ -428,7 +490,8 @@ private fun PetScreen(
             value = color,
             onValueChange = { color = it },
             isEditable = editMode,
-            error = colorError
+            error = colorError,
+            modifier = Modifier.fillMaxWidth()
         )
 
         // Gender selection (replace with your implementation)
@@ -551,7 +614,7 @@ fun ActivityItem(
 @Composable
 fun PetActivitiesScreen(
     petId: Int,
-    viewModel: PetViewModel = viewModel()
+    viewModel: PetViewModel = viewModel(key = petId.toString())
 ) {
     val petActivities by viewModel.petActivities.collectAsState(emptyList())
     val editingActivity by viewModel.editingActivity.collectAsState()
@@ -589,15 +652,30 @@ fun PetActivitiesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             if (selectedActivities.isNotEmpty()) {
 
-                IconButton(onClick = { showDeleteConfirmation = true }) {
+                FilledIconButton(
+                    onClick = { showDeleteConfirmation = true },
+                    colors = IconButtonDefaults.filledIconButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = MaterialTheme.shapes.small
+                ) {
                     Icon(Icons.Filled.Delete, contentDescription = "Delete")
                 }
             }
-            IconButton(onClick = { showAddActivity = true }) {
+            FilledIconButton(
+                onClick = { showAddActivity = true },
+                colors = IconButtonDefaults.filledIconButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                shape = MaterialTheme.shapes.small
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = "Add Activity")
             }
 
@@ -651,5 +729,4 @@ fun PetActivitiesScreen(
         )
     }
 }
-
 

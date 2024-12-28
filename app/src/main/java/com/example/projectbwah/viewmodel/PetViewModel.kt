@@ -1,6 +1,7 @@
 package com.example.projectbwah.viewmodel
 
 
+import MeasurementSystemManager
 import android.app.Application
 import android.content.Context
 import android.net.Uri
@@ -40,8 +41,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     var description = mutableStateOf("")
     var descriptionError = mutableStateOf("")
     var weight = mutableStateOf("")
+    var weightUnit = mutableStateOf(MeasurementSystemManager.getWeightUnits().first())
     var weightError = mutableStateOf("")
     var height = mutableStateOf("")
+    var heightUnit = mutableStateOf(MeasurementSystemManager.getMeasurementUnits().first())
     var heightError = mutableStateOf("")
     var birthDate = mutableStateOf<LocalDate?>(null)
     var birthDateError = mutableStateOf("")
@@ -91,7 +94,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             dao.getPetById(petId).collectLatest { loadedPet ->
                 pet.value = loadedPet
                 clearStates(loadedPet)
-                getPetActivities(petId)
+                if(_petActivities.value.isEmpty()) {
+                    getPetActivities(petId)
+                }
              }
         }
     }
@@ -107,12 +112,16 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun hasChanges(): Boolean {
         val loadedPet = pet.value
+
+
         if (loadedPet == null) {
             return name.value.isNotBlank() ||
                     breed.value.isNotBlank() ||
                     description.value.isNotBlank() ||
                     weight.value.isNotBlank() ||
+                    heightUnit.value != MeasurementSystemManager.getWeightUnits().first() ||
                     height.value.isNotBlank() ||
+                    heightUnit.value != MeasurementSystemManager.getMeasurementUnits().first() ||
                     birthDate.value != null ||
                     adoptedDate.value != null ||
                     color.value.isNotBlank() ||
@@ -125,7 +134,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     breed.value != loadedPet.breed.orEmpty() ||
                     description.value != loadedPet.description.orEmpty() ||
                     weight.value != loadedPet.weight?.toString().orEmpty() ||
+                    weightUnit.value != loadedPet.weightUnit.orEmpty() ||
                     height.value != loadedPet.height?.toString().orEmpty() ||
+                    heightUnit.value != loadedPet.heightUnit.orEmpty() ||
                     birthDate.value != loadedPet.birthDate ||
                     adoptedDate.value != loadedPet.adoptedDate ||
                     color.value != loadedPet.color.orEmpty() ||
@@ -139,13 +150,15 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     fun clearStates(loadedPet: Pet? = pet.value) {
         // clear all states
         clearErrorStates()
-        if (petId.value == null) pet.value = null
+        petId.value = loadedPet?.idPet
         selectedSpeciesName.value = getSpeciesNameById(loadedPet?.speciesId)
         name.value = loadedPet?.name ?: ""
         breed.value = loadedPet?.breed ?: ""
         description.value = loadedPet?.description ?: ""
         weight.value = loadedPet?.weight?.toString() ?: ""
+        weightUnit.value = loadedPet?.weightUnit ?: MeasurementSystemManager.getWeightUnits().first()
         height.value = loadedPet?.height?.toString() ?: ""
+        heightUnit.value = loadedPet?.heightUnit ?: MeasurementSystemManager.getMeasurementUnits().first()
         birthDate.value = loadedPet?.birthDate
         adoptedDate.value = loadedPet?.adoptedDate
         color.value = loadedPet?.color ?: ""
@@ -155,6 +168,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
         _editingActivity.value = null
         selectedActivities.clear()
+        _petActivities.value = emptyList()
 
     }
 
@@ -173,7 +187,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 breed = breed.value,
                 description = description.value,
                 weight = weight.value.toDoubleOrNull(),
+                weightUnit = weightUnit.value,
                 height = height.value.toDoubleOrNull(),
+                heightUnit = heightUnit.value,
                 birthDate = birthDate.value,
                 adoptedDate = adoptedDate.value,
                 color = color.value,
@@ -188,7 +204,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 breed = breed.value,
                 description = description.value,
                 weight = weight.value.toDoubleOrNull(),
+                weightUnit = weightUnit.value,
                 height = height.value.toDoubleOrNull(),
+                heightUnit = heightUnit.value,
                 birthDate = birthDate.value,
                 adoptedDate = adoptedDate.value,
                 color = color.value,
@@ -312,20 +330,20 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     fun insertActivities() {
         val petId = petId.value ?: return
         val speciesId = speciesList.value.find { it.name == selectedSpeciesName.value }?.id
-
+        val petActivities = emptyList<PetActivity>().toMutableList()
         viewModelScope.launch {
             val defaultActivities = withContext(Dispatchers.IO) {
                 dao.getDefaultDefaultActivitiesList()
             }
-            _petActivities.value += defaultActivities.map { it.toPetActivity(petId) }
+            petActivities.addAll( defaultActivities.map { it.toPetActivity(petId)} )
 
             if (speciesId != null) {
                 val speciesActivities = withContext(Dispatchers.IO) {
                     dao.getDefaultActivitiesListBySpeciesId(speciesId)
                 }
-                _petActivities.value += speciesActivities.map { it.toPetActivity(petId) }
+                petActivities.addAll( speciesActivities.map { it.toPetActivity(petId) })
             }
-            _petActivities.value.forEach { activity ->
+            petActivities.forEach { activity ->
                 dao.insertPetActivity(activity)
             }
         }

@@ -120,7 +120,8 @@ fun SpeciesActivitiesScreen(
             activityId = editingActivity?.id,
             speciesId = speciesId,
             petId = null,
-            isPetActivity = false
+            isPetActivity = false,
+            editModeByDefault = true
         )
     }
 

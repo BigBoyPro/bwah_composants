@@ -19,7 +19,9 @@ import kotlinx.coroutines.launch
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-
+    init {
+        MeasurementSystemManager.initialize(application)
+    }
 
     private val dao by lazy { PetsDB.getDB(application).PetsDao()}
     val allPets: Flow<List<Pet>> = dao.getAllPets()
