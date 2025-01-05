@@ -20,6 +20,8 @@ material = "1.12.0"
 places = "4.1.0"
 navigationCompose = "2.8.5"
 inputmapping = "1.1.1-beta"
+workRuntimeKtx = "2.10.0"
+workRuntimeKtxVersion = "2.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.3.1" }
@@ -48,6 +50,8 @@ material = { group = "com.google.android.material", name = "material", version.r
 places = { group = "com.google.android.libraries.places", name = "places", version.ref = "places" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 inputmapping = { group = "com.google.android.libraries.play.games", name = "inputmapping", version.ref = "inputmapping" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

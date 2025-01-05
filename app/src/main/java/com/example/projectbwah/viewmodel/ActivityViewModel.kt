@@ -6,10 +6,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectbwah.data.ActivityBase
 import com.example.projectbwah.data.DefaultActivity
+import com.example.projectbwah.data.Pet
 import com.example.projectbwah.data.PetActivity
 import com.example.projectbwah.data.PetsDB
 import com.example.projectbwah.data.ScheduleType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,6 +23,8 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
 
     private val dao by lazy { PetsDB.getDB(application).PetsDao() }
 
+    private val _pets = MutableStateFlow<List<Pet>>(emptyList())
+    val pets: StateFlow<List<Pet>> = _pets
 
     var isPetActivity  = mutableStateOf(true)
     var activityId = mutableStateOf<Int?>(null)
@@ -270,6 +275,16 @@ class ActivityViewModel(application: Application) : AndroidViewModel(application
                 } else {
                     dao.deleteDefaultActivityById(activityId.value!!)
                 }
+            }
+        }
+    }
+
+
+    fun getPetsBySpecies(speciesId: Int) {
+        viewModelScope.launch {
+            dao.getPetsBySpecies(speciesId).collect { pets ->
+                _pets.value = pets
+
             }
         }
     }

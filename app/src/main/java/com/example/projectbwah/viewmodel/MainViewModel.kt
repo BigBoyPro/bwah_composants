@@ -1,6 +1,9 @@
 package com.example.projectbwah.viewmodel
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
@@ -9,6 +12,8 @@ import com.example.projectbwah.data.DefaultActivity
 import com.example.projectbwah.data.Pet
 import com.example.projectbwah.data.PetsDB
 import com.example.projectbwah.data.Species
+import com.example.projectbwah.services.NOTIFICATION_CHANNEL_ID
+import com.example.projectbwah.services.NOTIFICATION_CHANNEL_NAME
 import com.example.projectbwah.utils.ThemeHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -66,5 +71,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ThemeHelper(getApplication()).setDarkTheme(_isDarkTheme.value) // Update Shared Preferences
         }
     }
+
+
+    //Notifications
+    val notificationManager =
+        application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+
+    val notificationChannel =
+        NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            NOTIFICATION_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+
 
 }

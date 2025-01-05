@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.places)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.inputmapping)
+    implementation(libs.work.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -83,5 +84,6 @@ dependencies {
     implementation(libs.easycrop)
     implementation("com.google.accompanist:accompanist-pager:0.24.13-rc")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.24.13-rc")
+    implementation("com.google.accompanist:accompanist-permissions:0.30.1")
 
 }

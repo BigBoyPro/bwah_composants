@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
-@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 2)
+@Database(entities = [Pet::class, Species::class, DefaultActivity::class, PetActivity::class], version = 3)
 @TypeConverters(Converters::class)
 abstract class PetsDB : RoomDatabase() {
     abstract fun PetsDao(): PetsDao

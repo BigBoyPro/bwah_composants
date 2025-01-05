@@ -57,12 +57,14 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.projectbwah.PetDialog
 import com.example.projectbwah.data.Pet
+import com.example.projectbwah.services.NotificationService
 import com.example.projectbwah.viewmodel.MainViewModel
 import java.io.File
 
@@ -111,6 +113,8 @@ fun HomeScreen(pets: List<Pet>, viewModel: MainViewModel = viewModel()) {
     var showDeleteConfirmationDialog by viewModel.showDeleteConfirmationDialog
     var showPetDialog by rememberSaveable { mutableStateOf(false) }
     var selectedPetId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    val notificationService = NotificationService(LocalContext.current)
 
 
     LazyVerticalGrid(

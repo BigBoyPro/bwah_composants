@@ -1,5 +1,7 @@
 package com.example.projectbwah
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,16 +24,32 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.projectbwah.data.ScheduleType
 import com.example.projectbwah.utils.ConfirmDismissDialog
 import com.example.projectbwah.utils.CustomPopupDropdownMenu
 import com.example.projectbwah.utils.DatePickerTextFieldWithError
 import com.example.projectbwah.utils.TextFieldWithError
 import com.example.projectbwah.utils.TimePickerTextFieldWithError
+import com.example.projectbwah.utils.scheduleNotification
 import com.example.projectbwah.viewmodel.ActivityViewModel
+import com.example.projectbwah.workers.DailyActivityNotificationWorker
+import com.example.projectbwah.workers.MonthlyActivityNotificationWorker
+import com.example.projectbwah.workers.OnceActivityNotificationWorker
+import com.example.projectbwah.workers.WeeklyActivityNotificationWorker
+import com.google.android.libraries.places.api.model.kotlin.localDate
+import com.google.android.libraries.places.api.model.kotlin.localTime
+import java.time.LocalDate
 import java.time.LocalTime
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +65,10 @@ fun ActivityDialog(
         key = (activityId ?: 0).toString() + (speciesId ?: 0).toString() + (petId ?: 0).toString()
     ),
 ) {
+    val context = LocalContext.current
+
+    val pets = viewModel.pets.collectAsState(emptyList())
+
 
     var showRevertChangesDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false) }
@@ -221,7 +243,25 @@ fun ActivityDialog(
                 },
                 floatingActionButton = {
                     if (editMode) {
+
                         FloatingActionButton(onClick = {
+//                            Log.d("ActivityViewModel", "scheduleNotification called")
+//                            Log.d("ActivityViewModel", "activityId: ${viewModel.activityId}")
+//                            Log.d("ActivityViewModel", "activityName: ${viewModel.name.value}")
+//                            Log.d("ActivityViewModel", "scheduleType: ${viewModel.scheduleType.value}")
+//                            Log.d("ActivityViewModel", "scheduleDate: ${viewModel.scheduleDate.value}")
+//                            Log.d("ActivityViewModel", "scheduleTime: ${viewModel.scheduleTime.value}")
+//                            Log.d("ActivityViewModel", "scheduleDayOfWeekOrMonth: ${viewModel.scheduleDayOfWeekOrMonth.value}")
+
+                            if (isPetActivity) {
+                                scheduleNotification(viewModel.activityId.value, viewModel.name.value, viewModel.scheduleType.value, viewModel.scheduleDate.value, viewModel.scheduleTime.value, viewModel.scheduleDayOfWeekOrMonth.value, context)
+                            } else {
+                                for (pet in pets.value) {
+                                    scheduleNotification(viewModel.activityId.value, viewModel.name.value, viewModel.scheduleType.value, viewModel.scheduleDate.value, viewModel.scheduleTime.value, viewModel.scheduleDayOfWeekOrMonth.value, context)
+                                }
+
+                            }
+
                             viewModel.addOrUpdateActivity()
                         }) {
                             Icon(Icons.Filled.Done, contentDescription = "Save")
@@ -403,4 +443,6 @@ private fun ActivityScreen(
     }
 
 }
+
+
 

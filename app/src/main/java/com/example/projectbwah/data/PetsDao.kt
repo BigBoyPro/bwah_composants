@@ -54,6 +54,10 @@ interface PetsDao {
     @Query("SELECT * FROM species WHERE id = :speciesId")
     fun getSpeciesById(speciesId: Int): Flow<Species>
 
+    @Query("SELECT * FROM pets WHERE speciesId = :speciesId")
+    fun getPetsBySpecies(speciesId: Int): Flow<List<Pet>>
+
+
 
     /*
     default (species) activities queries
@@ -113,5 +117,7 @@ interface PetsDao {
 
     @Query("DELETE FROM default_activities WHERE id = :activityId")
     fun deleteDefaultActivityById(activityId: Int)
+
+
 
 }

@@ -1,5 +1,9 @@
 package com.example.projectbwah
 
+import android.annotation.SuppressLint
+import android.app.Application
+import android.app.NotificationChannel
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,6 +52,16 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import com.example.projectbwah.screens.HomeScreen
 import com.example.projectbwah.screens.SearchScreen
 import com.example.projectbwah.screens.SettingsScreen
+import android.app.NotificationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.compose.runtime.LaunchedEffect
+import com.example.projectbwah.services.NOTIFICATION_CHANNEL_ID
+import com.example.projectbwah.services.NOTIFICATION_CHANNEL_NAME
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 
 
 class MainActivity : ComponentActivity() {
@@ -69,10 +83,14 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+
+
+        //splash screen
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { true }
 
@@ -84,7 +102,9 @@ class MainActivity : ComponentActivity() {
         // theme helper
 
 
+
         setContent {
+
             MainScreen()
         }
     }
@@ -113,12 +133,46 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("PermissionLaunchedDuringComposition")
+    @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     private fun MainScreen(viewModel: MainViewModel = viewModel()) {
         val navigationBarItems = rememberSaveable { NavigationBarItems.entries.toTypedArray() }
         var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
         val pets by viewModel.allPets.collectAsState(emptyList())
 
+
+        val notificationPermissionState = rememberPermissionState(
+            permission = android.Manifest.permission.POST_NOTIFICATIONS
+        )
+
+
+
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // Permission Granted: Do something
+            } else {
+                // Permission Denied: Show an explanation or disable functionality
+            }
+        }
+
+        if (notificationPermissionState.status.isGranted) {
+            // Notifications
+            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationChannel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(notificationChannel)
+        } else {
+            // Request permission
+            LaunchedEffect(key1 = notificationPermissionState.status) {
+                launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         // theme helper
         val isDarkTheme by viewModel.isDarkTheme.collectAsState() // Collect theme preference from ViewModel
@@ -154,7 +208,7 @@ class MainActivity : ComponentActivity() {
                     )
                     .fillMaxSize()) {
                     when (selectedIndex) {
-                        0 -> HomeScreen(pets)
+                        0 -> HomeScreen(pets )
                         1 -> SearchScreen()
                         2 -> SettingsScreen()
                         else -> HomeScreen(pets)
